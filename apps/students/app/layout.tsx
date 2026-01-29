@@ -2,6 +2,7 @@ import "@repo/ui/styles.css";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Lexend } from "next/font/google";
+import { ReactQueryProvider } from "@/providers/react-query-provider";
 
 const lexend = Lexend({
   subsets: ["latin"],
@@ -19,7 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR">
       <body className={`${lexend.variable} font-sans antialiased`}>
-        {children}
+        <ReactQueryProvider>
+          {children}
+        </ReactQueryProvider>
       </body>
     </html>
   );
