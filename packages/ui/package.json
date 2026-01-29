@@ -21,7 +21,8 @@
     "lint": "eslint src --max-warnings 0"
   },
   "peerDependencies": {
-    "react": "^19"
+    "react": "^19",
+    "react-hook-form": "^7.71.1"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
@@ -41,7 +42,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",
-    "react-hook-form": "^7.71.1",
     "tailwind-merge": "^3.4.0",
     "zod": "^3.25.76"
   }
