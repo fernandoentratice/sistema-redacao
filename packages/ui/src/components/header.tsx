@@ -27,8 +27,10 @@ export function Header({
         {logoText}
       </span>
 
+
       <div className="flex items-center gap-6">
         {/* Menu Desktop */}
+        {/* TODO: criar menu mobile */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           {items.map((item) => {
             const isActive = activePath === item.href;
