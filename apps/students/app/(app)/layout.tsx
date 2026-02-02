@@ -37,7 +37,7 @@ export default function AppLayout({
         activePath={pathname}
       />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto p-6 md:p-8">
+      <main className="flex-1 w-full p-6 md:p-8">
         {children}
       </main>
 

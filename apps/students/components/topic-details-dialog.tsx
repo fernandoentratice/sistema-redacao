@@ -146,8 +146,9 @@ export function TopicDetailsDialog({ topic, children }: TopicDetailsDialogProps)
             </Button>
           </DialogClose>
 
-          <Link href={`/essay/new?topic=${topic.slug}`} className="w-full sm:w-auto">
-            <Button className="w-full bg-primary font-bold rounded-full gap-4 h-12 shadow-lg shadow-yellow-500/10">
+          <Link href={`/minhas-redacoes/nova-redacao?topic=${topic.slug}`} className="w-full sm:w-auto">
+            <Button
+              className="w-full bg-primary font-bold rounded-full gap-4 h-12 shadow-lg shadow-yellow-500/10">
               Iniciar Redação
               <NotebookPen className="size-4" />
             </Button>
