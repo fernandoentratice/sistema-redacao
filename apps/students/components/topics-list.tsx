@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import type { EssayTopic, ThematicAxis } from "@repo/types";
-
+import { TopicDetailsDialog } from "@/components/topic-details-dialog";
 
 const AXIS_ICONS: Record<ThematicAxis, React.ElementType> = {
   "Educação": GraduationCap,
@@ -175,13 +175,15 @@ export function TopicsList({ topics }: TopicsListProps) {
 
                 {/* Botões (Ocupa 3 colunas) */}
                 <div className="lg:col-span-3 flex flex-row gap-2 justify-end mt-4 lg:mt-0">
-                  <Button
-                    variant="outline"
-                    className="rounded-full gap-2 text-xs font-bold h-10 border-slate-200 text-[#1E3A8A] hover:bg-blue-50 hover:text-blue-900 hover:border-blue-200 px-4 whitespace-nowrap cursor-pointer"
-                  >
-                    Ver Proposta
-                    <Eye className="size-4.5" />
-                  </Button>
+                  <TopicDetailsDialog topic={topic}>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto rounded-full gap-2 text-xs font-bold h-10 border-slate-200 text-[#1E3A8A] hover:bg-blue-50 hover:text-blue-900 hover:border-blue-200 px-4 whitespace-nowrap cursor-pointer"
+                    >
+                      Ver Proposta
+                      <Eye className="size-4.5" />
+                    </Button>
+                  </TopicDetailsDialog>
 
                   <Button
                     className="rounded-full gap-2 text-xs font-bold bg-primary text-slate-900 shadow-sm h-10 px-4 cursor-pointer whitespace-nowrap"

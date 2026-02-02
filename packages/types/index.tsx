@@ -21,6 +21,7 @@ export interface MotivatingText {
 export interface EssayTopic {
   id: string;
   title: string;
+  description: string;
   slug: string;
   axis: ThematicAxis;
   origin: TopicOrigin;
