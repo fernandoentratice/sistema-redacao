@@ -2,7 +2,7 @@ import { CreditBalance } from "@/components/credit-balance";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@repo/ui/components/button";
 import { createClient } from "@/lib/supabase";
-import { CirclePlus, FileText, TrendingUp } from "lucide-react";
+import { FileText, Plus, TrendingUp } from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { CompetenceList } from "@/components/competence-list";
 import { EvolutionGraph } from "@/components/evolution-graph";
@@ -72,8 +72,8 @@ export default async function DashboardPage() {
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
           <CreditBalance amount={12} />
-          <Button className="rounded-full h-14 gap-3 w-full sm:w-auto px-6 shadow-lg shadow-yellow-400/20 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold">
-            <CirclePlus className="size-5" />
+          <Button className="rounded-full h-14 gap-2 w-full sm:w-auto px-6 shadow-lg shadow-yellow-400/20 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold">
+            <Plus className="size-5" />
             Enviar nova redação
           </Button>
         </div>

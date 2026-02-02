@@ -18,6 +18,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 import type { EssayTopic, ThematicAxis } from "@repo/types";
 import { TopicDetailsDialog } from "@/components/topic-details-dialog";
+import { ThemeBadge } from "@repo/ui/components/theme-badge";
 
 const AXIS_ICONS: Record<ThematicAxis, React.ElementType> = {
   "Educação": GraduationCap,
@@ -156,21 +157,18 @@ export function TopicsList({ topics }: TopicsListProps) {
 
                   {/* Badge Mobile/Tablet (Aparece até chegar em telas Grandes) */}
                   <div className="lg:hidden mt-3">
-                    <span className={`inline-flex px-3 py-1 text-[10px] font-bold uppercase rounded-full border ${AXIS_BADGE_STYLES[topic.axis]}`}>
-                      {topic.axis}
-                    </span>
+                    <ThemeBadge
+                      className="inline-flex px-3 py-1 text-[10px] font-bold uppercase rounded-full border"
+                      value={topic.axis} />
                   </div>
                 </div>
 
                 {/* Badge Desktop (Ocupa 3 colunas agora - Mais espaço!) */}
                 <div className="hidden lg:flex lg:col-span-3 justify-center px-2">
-                  <span className={`
-                    w-full max-w-[200px] px-2 py-1.5 text-[10px] font-bold uppercase rounded-full border tracking-wide 
-                    h-auto whitespace-normal text-center flex items-center justify-center min-h-7 leading-tight
-                    ${AXIS_BADGE_STYLES[topic.axis]}
-                  `}>
-                    {topic.axis}
-                  </span>
+                  <ThemeBadge
+                    className="w-full max-w-[200px] px-2 py-1.5 text-[10px] font-bold uppercase rounded-full border tracking-wide 
+                    h-auto whitespace-normal text-center flex items-center justify-center min-h-7 leading-tight"
+                    value={topic.axis} />
                 </div>
 
                 {/* Botões (Ocupa 3 colunas) */}
