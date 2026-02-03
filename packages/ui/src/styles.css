@@ -131,8 +131,6 @@
     --soft-blue: 205.4 86.7% 94.1%;
   }
 
-
-
   * {
     @apply border-border;
     font-family: var(--font-lexend), ui-sans-serif, system-ui, sans-serif;
@@ -149,6 +147,11 @@
   h5,
   h6 {
     font-family: var(--font-display);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 
   .bg-gradient-soft {

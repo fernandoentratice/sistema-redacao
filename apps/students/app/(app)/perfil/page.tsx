@@ -1,12 +1,9 @@
 import { CompetenceList } from "@/components/competence-list";
-import { CreditBalance } from "@/components/credit-balance";
 import { EvolutionGraph } from "@/components/evolution-graph";
 import { ProfileHeader } from "@/components/profile-header";
 import { SectionCard } from "@/components/section-card";
 import { UserStats } from "@/components/user-stats";
-import { Button } from "@repo/ui/components/button";
-import { User, Mail, UserCog, FileText, TrendingUp, Award, BarChart3 } from "lucide-react";
-
+import { FileText, TrendingUp } from "lucide-react";
 
 const userProfile = {
   name: "Gabriel Silva",

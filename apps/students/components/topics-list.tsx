@@ -31,17 +31,6 @@ const AXIS_ICONS: Record<ThematicAxis, React.ElementType> = {
   "Segurança": Shield,
 };
 
-const AXIS_BADGE_STYLES: Record<ThematicAxis, string> = {
-  "Educação": "bg-blue-100 text-blue-700 border-blue-200",
-  "Meio Ambiente": "bg-green-100 text-green-700 border-green-200",
-  "Cidadania e Direitos Humanos": "bg-orange-100 text-orange-700 border-orange-200",
-  "Saúde": "bg-red-100 text-red-700 border-red-200",
-  "Cultura": "bg-purple-100 text-purple-700 border-purple-200",
-  "Tecnologia": "bg-cyan-100 text-cyan-700 border-cyan-200",
-  "Trabalho": "bg-slate-100 text-slate-700 border-slate-200",
-  "Segurança": "bg-yellow-100 text-yellow-800 border-yellow-200",
-};
-
 const AXIS_FILTERS: ("Todos" | ThematicAxis)[] = [
   "Todos",
   "Educação",
@@ -176,7 +165,7 @@ export function TopicsList({ topics }: TopicsListProps) {
                   <TopicDetailsDialog topic={topic}>
                     <Button
                       variant="outline"
-                      className="w-full sm:w-auto rounded-full gap-2 text-xs font-bold h-10 border-slate-200 text-[#1E3A8A] hover:bg-blue-50 hover:text-blue-900 hover:border-blue-200 px-4 whitespace-nowrap cursor-pointer"
+                      className="w-full sm:w-auto rounded-full gap-2 text-xs font-bold h-10 border-slate-200 text-[#1E3A8A] hover:bg-blue-50 hover:text-blue-900 hover:border-blue-200 px-4 whitespace-nowrap "
                     >
                       Ver Proposta
                       <Eye className="size-4.5" />
@@ -184,7 +173,7 @@ export function TopicsList({ topics }: TopicsListProps) {
                   </TopicDetailsDialog>
 
                   <Button
-                    className="rounded-full gap-2 text-xs font-bold bg-primary text-slate-900 shadow-sm h-10 px-4 cursor-pointer whitespace-nowrap"
+                    className="rounded-full gap-2 text-xs font-bold bg-primary text-slate-900 shadow-sm h-10 px-4  whitespace-nowrap"
                   >
                     Iniciar Redação
                     <NotebookPen className="size-3.5" />
