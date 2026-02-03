@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/lib/supabase";
+import { createClient } from "@/lib/client";
 import { useRouter, usePathname } from "next/navigation";
 import { Header } from "@repo/ui/components/header";
 import { Footer } from "@repo/ui/components/footer";

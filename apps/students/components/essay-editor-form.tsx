@@ -1,25 +1,36 @@
 "use client";
 
-import { useState } from "react";
-import { Send, Save } from "lucide-react";
+import { useState, useActionState } from "react"; // Use useFormState se for Next.js 14 ou anterior
+import { Save, AlertCircle } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
+import { submitEssay } from "@/app/actions/submit-essay";
+import { SubmitEssayButton } from "./submit-essay-button";
 
 interface EssayEditorFormProps {
-  topicId: string;
+  topicTitle: string;
+  topicAxis: string;
 }
 
-export function EssayEditorForm({ topicId }: EssayEditorFormProps) {
+export function EssayEditorForm({ topicTitle, topicAxis }: EssayEditorFormProps) {
   const [text, setText] = useState("");
+  // Estado da Server Action
+  const [state, formAction] = useActionState(submitEssay, {});
 
   const MAX_CHARS = 10000;
+  const MIN_CHARS = 100; // Mínimo para liberar o botão
   const charCount = text.length;
   const progressPercentage = Math.min((charCount / MAX_CHARS) * 100, 100);
 
   const isOverLimit = charCount > MAX_CHARS;
-  const progressColor = isOverLimit ? "bg-red-500" : "bg-[#EBC84C]";
+  const isTooShort = charCount < MIN_CHARS;
+  const progressColor = isOverLimit ? "bg-red-500" : "bg-primary";
 
   return (
-    <div className="flex flex-col h-full gap-4">
+    <form action={formAction} className="flex flex-col h-full gap-4">
+      {/* INPUTS OCULTOS: Passam dados do tema para a Server Action */}
+      <input type="hidden" name="title" value={topicTitle} />
+      <input type="hidden" name="thematicAxis" value={topicAxis} />
+
       <div className="bg-white rounded-3xl border border-slate-200 flex flex-col flex-1 shadow-sm overflow-hidden relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between p-5 border-b border-slate-100 gap-4 bg-slate-50/30">
           <div>
@@ -36,6 +47,14 @@ export function EssayEditorForm({ topicId }: EssayEditorFormProps) {
           </div>
         </div>
 
+        {/* Exibição de Erro vindo do Server */}
+        {state.error && (
+          <div className="mx-6 mt-6 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-sm font-medium animate-in slide-in-from-top-2">
+            <AlertCircle className="size-4 shrink-0" />
+            {state.error}
+          </div>
+        )}
+
         <div className="flex-1 relative flex flex-col p-6">
           <label htmlFor="essay-text" className="text-xs font-bold text-slate-400 uppercase tracking-widest">
             Seu texto
@@ -43,6 +62,7 @@ export function EssayEditorForm({ topicId }: EssayEditorFormProps) {
 
           <textarea
             id="essay-text"
+            name="content" // Importante: O Server Action busca por esse nome
             className="flex-1 w-full resize-none outline-none text-slate-700 leading-relaxed placeholder:text-slate-300 text-base font-medium bg-transparent"
             placeholder="Primeiro, escreva sua redação à mão, como no dia da prova. Depois, transcreva-a aqui."
             value={text}
@@ -71,17 +91,14 @@ export function EssayEditorForm({ topicId }: EssayEditorFormProps) {
         </div>
 
         <div className="p-5 border-t border-slate-200 flex flex-col sm:flex-row items-center gap-4 justify-between">
-          <Button
-            disabled={isOverLimit || charCount === 0}
-            className="w-full sm:w-auto bg-[#10B981] hover:bg-[#059669] text-white font-bold rounded-full h-12 shadow-lg shadow-green-500/20 gap-2 transition-all hover:scale-105"
-          >
-            Enviar para Correção
-            <Send className="size-4" />
-          </Button>
+
+          {/* Botão extraído para suportar useFormStatus */}
+          <SubmitEssayButton disabled={isOverLimit || isTooShort} />
 
           <Button
+            type="button" // Type button para não submeter o form
             variant="outline"
-            disabled={charCount === 0}
+            disabled={isTooShort}
             className="w-full sm:w-auto font-bold rounded-full h-12 px-6 gap-2"
           >
             <Save className="size-4" />
@@ -90,6 +107,6 @@ export function EssayEditorForm({ topicId }: EssayEditorFormProps) {
 
         </div>
       </div>
-    </div>
+    </form>
   );
 }

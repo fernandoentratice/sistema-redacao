@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase";
+import { createClient } from "@/lib/server";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { FileText } from "lucide-react";
 import { EssayEditorForm } from "@/components/essay-editor-form";
@@ -29,7 +29,7 @@ function SidebarMotivatingText({ item }: { item: MotivatingText }) {
 }
 
 export default async function NewEssayPage(props: Props) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const searchParams = await props.searchParams;
   const slug = searchParams.topic;
 
@@ -94,7 +94,9 @@ export default async function NewEssayPage(props: Props) {
 
         <div className="flex-1 h-full flex flex-col min-w-0">
           <MobileTopicAccordion topic={essayTopic} />
-          <EssayEditorForm topicId={essayTopic.id} />
+          <EssayEditorForm
+            topicTitle={essayTopic.title}
+            topicAxis={essayTopic.axis} />
         </div>
 
       </div>

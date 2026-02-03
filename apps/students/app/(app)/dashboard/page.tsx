@@ -1,7 +1,7 @@
 import { CreditBalance } from "@/components/credit-balance";
 import { StatCard } from "@/components/stat-card";
 import { Button } from "@repo/ui/components/button";
-import { createClient } from "@/lib/supabase";
+import { createClient } from "@/lib/server";
 import { FileText, Plus, TrendingUp } from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { CompetenceList } from "@/components/competence-list";

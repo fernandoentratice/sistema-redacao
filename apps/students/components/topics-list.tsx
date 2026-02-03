@@ -19,6 +19,7 @@ import { Button } from "@repo/ui/components/button";
 import type { EssayTopic, ThematicAxis } from "@repo/types";
 import { TopicDetailsDialog } from "@/components/topic-details-dialog";
 import { ThemeBadge } from "@repo/ui/components/theme-badge";
+import Link from "next/link";
 
 const AXIS_ICONS: Record<ThematicAxis, React.ElementType> = {
   "Educação": GraduationCap,
@@ -173,10 +174,13 @@ export function TopicsList({ topics }: TopicsListProps) {
                   </TopicDetailsDialog>
 
                   <Button
+                    asChild
                     className="rounded-full gap-2 text-xs font-bold bg-primary text-slate-900 shadow-sm h-10 px-4  whitespace-nowrap"
                   >
-                    Iniciar Redação
-                    <NotebookPen className="size-3.5" />
+                    <Link href={`/minhas-redacoes/nova-redacao?topic=${topic.slug}`}>
+                      Iniciar Redação
+                      <NotebookPen className="size-3.5" />
+                    </Link>
                   </Button>
                 </div>
               </div>

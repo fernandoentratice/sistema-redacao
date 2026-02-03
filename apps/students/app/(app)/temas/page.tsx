@@ -1,22 +1,18 @@
-import { createClient } from "@/lib/supabase";
-import { SectionCard } from "@/components/section-card"; // Reutilizando a lógica visual se quiser, ou fazemos na mão
+import { createClient } from "@/lib/server";
 import { TopicsList } from "@/components/topics-list";
-import { Sparkles, Compass, ArrowRight } from "lucide-react";
-import { Button } from "@repo/ui/components/button";
 
-export const dynamic = "force-dynamic"; // Garante dados frescos
+export const dynamic = "force-dynamic";
 
 export default async function TopicsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
-  // 1. Buscar Temas no Supabase
   const { data: topics } = await supabase
     .from("essay_topics")
     .select("*")
     .eq("active", true)
     .order("created_at", { ascending: false });
 
-  // Mock de "Recomendados" (Pegando os 3 primeiros por enquanto)
+
   const suggestedTopics = topics?.slice(0, 3) || [];
   const allTopics = topics || [];
 
