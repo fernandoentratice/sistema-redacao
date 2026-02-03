@@ -16,7 +16,7 @@ export default function AppLayout({
 
   const navItems = [
     { label: "Início", href: "/dashboard" },
-    { label: "Minhas Redações", href: "/redacoes" },
+    { label: "Minhas Redações", href: "/minhas-redacoes" },
     { label: "Temas", href: "/temas" },
     { label: "Meu perfil", href: "/perfil" },
   ];
@@ -28,13 +28,11 @@ export default function AppLayout({
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-
+    <div className="min-h-screen max-w-flex flex-col">
       <Header
-        logoText="Redação 1000"
         items={navItems}
-        onLogout={handleLogout}
         activePath={pathname}
+        onLogout={handleLogout}
       />
 
       <main className="flex-1 w-full p-6 md:p-8">
@@ -42,8 +40,6 @@ export default function AppLayout({
       </main>
 
       <Footer />
-
-
     </div>
   );
 }

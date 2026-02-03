@@ -4,6 +4,7 @@
 @import "@repo/tailwind-config";
 @source "./components";
 
+
 @theme {
   /* Mapeando as variáveis do Shadcn para o Tailwind */
   --color-background: hsl(var(--background));
