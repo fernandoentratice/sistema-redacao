@@ -1,3 +1,9 @@
+export interface UserData {
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
 export type ThematicAxis =
   | 'Educação'
   | 'Meio Ambiente'

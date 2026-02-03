@@ -1,0 +1,75 @@
+import { CompetenceList } from "@/components/competence-list";
+import { CreditBalance } from "@/components/credit-balance";
+import { EvolutionGraph } from "@/components/evolution-graph";
+import { ProfileHeader } from "@/components/profile-header";
+import { SectionCard } from "@/components/section-card";
+import { UserStats } from "@/components/user-stats";
+import { Button } from "@repo/ui/components/button";
+import { User, Mail, UserCog, FileText, TrendingUp, Award, BarChart3 } from "lucide-react";
+
+
+const userProfile = {
+  name: "Gabriel Silva",
+  email: "gabriel.silva@estudante.com.br",
+  role: "Estudante",
+  avatarUrl: null
+};
+
+const MOCK_SCORES = {
+  C1: 180,
+  C2: 160,
+  C3: 200,
+  C4: 140,
+  C5: 165,
+};
+
+const MOCK_EVOLUTION = [
+  { month: "MAI", score: 380 },
+  { month: "JUN", score: 520 },
+  { month: "JUL", score: 680 },
+  { month: "AGO", score: 640 },
+  { month: "SET", score: 810 },
+  { month: "OUT", score: 920 },
+];
+
+export default function ProfilePage() {
+  const hasData = true;
+
+  return (
+    <div className="min-h-screen p-6 md:px-20 items-center">
+
+      <ProfileHeader user={userProfile} />
+
+      <div className="my-6">
+        <h2 className="text-3xl font-extrabold tracking-tight mb-2">
+          Minhas Estatísticas
+        </h2>
+        <p className="text-[#8B8265]">
+          Acompanhe seu progresso.
+        </p>
+      </div>
+
+      <UserStats />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+        <SectionCard
+          title="Média por Competência"
+          icon={FileText}
+          hasData={hasData}
+          emptyDescription="Envie sua primeira redação para ver o detalhamento por competência."
+        >
+          <CompetenceList scores={MOCK_SCORES} />
+        </SectionCard>
+
+        <SectionCard
+          title="Evolução no Tempo"
+          icon={TrendingUp}
+          hasData={hasData}
+          emptyDescription="Seu gráfico de progresso será gerado automaticamente."
+        >
+          <EvolutionGraph data={MOCK_EVOLUTION} />
+        </SectionCard>
+      </div>
+    </div>
+  );
+}

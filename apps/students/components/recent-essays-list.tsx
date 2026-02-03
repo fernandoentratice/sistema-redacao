@@ -24,7 +24,7 @@ export function RecentEssaysList({ hasData = false, essays = [] }: RecentEssaysL
           <FileText className="size-5" /> Redações Recentes
         </h3>
         {hasData && (
-          <a href="#" className="text-sm font-bold text-secondary hover:underline">
+          <a href="/minhas-redacoes" className="text-sm font-bold text-secondary hover:underline">
             Ver todas as redações
           </a>
         )}

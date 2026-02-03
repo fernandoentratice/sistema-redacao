@@ -28,11 +28,11 @@ export function CompetenceList({ scores }: CompetenceListProps) {
                 {item.label}
               </span>
               <span className="font-bold">
-                <span className="text-lg text-primary">
+                <span className="text-md text-primary">
                   {score}
                 </span>
                 <span className="text-muted-foreground/60 text-xs ml-0.5">
-                  /{max}
+                  / {max}
                 </span>
               </span>
             </div>

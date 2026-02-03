@@ -92,7 +92,6 @@ export default function EssayFeedbackPage({ params }: { params: { id: string } }
                   .filter((comp) => comp.score === 200)
                   .map((comp) => {
                     const style = COMPETENCY_STYLES[comp.id as keyof typeof COMPETENCY_STYLES];
-                    console.log(comp)
                     const cleanName = comp.name.split(":")[1]?.trim();
 
                     return (
