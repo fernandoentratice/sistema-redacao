@@ -35,7 +35,7 @@ export default function AppLayout({
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 w-full p-6 md:p-8">
+      <main className="flex-1 w-full p-6 md:p-8 bg-slate-50">
         {children}
       </main>
 
