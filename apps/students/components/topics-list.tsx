@@ -4,16 +4,15 @@ import { useState } from "react";
 import {
   Search,
   Eye,
-  Compass,
   Leaf,
   GraduationCap,
   BriefcaseMedical,
   Users,
   Palette,
   Cpu,
-  Briefcase,
-  Shield,
-  NotebookPen
+  NotebookPen,
+  Scale,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import type { EssayTopic, ThematicAxis } from "@repo/types";
@@ -22,26 +21,26 @@ import { ThemeBadge } from "@repo/ui/components/theme-badge";
 import Link from "next/link";
 
 const AXIS_ICONS: Record<ThematicAxis, React.ElementType> = {
-  "Educação": GraduationCap,
   "Meio Ambiente": Leaf,
-  "Cidadania e Direitos Humanos": Users,
+  "Questões Sociais": Users,
   "Saúde": BriefcaseMedical,
   "Cultura": Palette,
+  "Direitos e Cidadania": Scale,
+  "Educação": GraduationCap,
   "Tecnologia": Cpu,
-  "Trabalho": Briefcase,
-  "Segurança": Shield,
+  "Economia": TrendingUp,
 };
 
 const AXIS_FILTERS: ("Todos" | ThematicAxis)[] = [
   "Todos",
-  "Educação",
   "Meio Ambiente",
-  "Cidadania e Direitos Humanos",
+  "Questões Sociais",
   "Saúde",
   "Cultura",
+  "Direitos e Cidadania",
+  "Educação",
   "Tecnologia",
-  "Trabalho",
-  "Segurança",
+  "Economia",
 ];
 
 interface TopicsListProps {
