@@ -1,10 +1,19 @@
 import { BarChart3, FileText, Award } from "lucide-react";
 
-export function UserStats() {
-  const stats = [
+interface UserStatsProps {
+  stats: {
+    totalEssays: number;
+    averageScore: number;
+    bestScore: number;
+  };
+}
+
+export function UserStats({ stats }: UserStatsProps) {
+  //TODO: ajustar footers
+  const statCards = [
     {
       label: "Média Geral",
-      value: "840.5",
+      value: stats.averageScore,
       footer: "+15 pts que a média nacional",
       icon: BarChart3,
       styles: {
@@ -15,7 +24,7 @@ export function UserStats() {
     },
     {
       label: "Redações Enviadas",
-      value: "24",
+      value: stats.totalEssays,
       footer: "Meta mensal: 12/15",
       icon: FileText,
       styles: {
@@ -26,7 +35,7 @@ export function UserStats() {
     },
     {
       label: "Melhor Competência",
-      value: "C3",
+      value: stats.bestScore,
       footer: "960 pts em média",
       icon: Award,
       styles: {
@@ -39,7 +48,7 @@ export function UserStats() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {stats.map((item, index) => (
+      {statCards.map((item, index) => (
         <div
           key={index}
           className="p-6 rounded-4xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
@@ -54,12 +63,12 @@ export function UserStats() {
           </div>
 
           <div>
-            <h3 className="text-4xl font-extrabold text-slate-900 mb-1 tracking-tight">
-              {item.value}
+            <h3 className={`text-4xl font-extrabold ${item.value > 0 ? 'text-slate-900' : 'text-slate-300'} mb-1 tracking-tight`}>
+              {item.value && item.value > 0 ? item.value : "—"}
             </h3>
-            <p className={`text-xs ${item.styles.footerText}`}>
+            {/* <p className={`text-xs ${item.styles.footerText}`}>
               {item.footer}
-            </p>
+            </p> */}
           </div>
         </div>
       ))}

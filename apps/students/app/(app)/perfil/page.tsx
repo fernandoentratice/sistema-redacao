@@ -3,7 +3,9 @@ import { EvolutionGraph } from "@/components/evolution-graph";
 import { ProfileHeader } from "@/components/profile-header";
 import { SectionCard } from "@/components/section-card";
 import { UserStats } from "@/components/user-stats";
+import { getProfileData } from "@/services/profile";
 import { FileText, TrendingUp } from "lucide-react";
+import { redirect } from "next/navigation";
 
 const userProfile = {
   name: "Gabriel Silva",
@@ -29,13 +31,26 @@ const MOCK_EVOLUTION = [
   { month: "OUT", score: 920 },
 ];
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const data = await getProfileData();
+
+  if (!data) {
+    redirect("/login");
+  }
+
   const hasData = true;
 
   return (
     <div className="min-h-screen p-6 md:px-20 items-center">
 
-      <ProfileHeader user={userProfile} />
+      <ProfileHeader
+        user={{
+          name: data.user.name,
+          email: data.user.email || "",
+          role: "Estudante",
+          avatarUrl: data?.user.avatarUrl
+        }}
+      />
 
       <div className="my-6">
         <h2 className="text-3xl font-extrabold tracking-tight mb-2">
@@ -46,25 +61,25 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <UserStats />
+      <UserStats stats={data.globalStats} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
         <SectionCard
           title="Média por Competência"
           icon={FileText}
-          hasData={hasData}
+          hasData={data.hasData}
           emptyDescription="Envie sua primeira redação para ver o detalhamento por competência."
         >
-          <CompetenceList scores={MOCK_SCORES} />
+          <CompetenceList scores={data.competencies} />
         </SectionCard>
 
         <SectionCard
           title="Evolução no Tempo"
           icon={TrendingUp}
-          hasData={hasData}
+          hasData={data.hasData}
           emptyDescription="Seu gráfico de progresso será gerado automaticamente."
         >
-          <EvolutionGraph data={MOCK_EVOLUTION} />
+          <EvolutionGraph data={data.evolution} />
         </SectionCard>
       </div>
     </div>
