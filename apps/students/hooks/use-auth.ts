@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { createClient } from "@/lib/server";
+import { createClient } from "@/lib/client";
 import { LoginSchema, RegisterSchema } from "@repo/validators";
 import { useRouter } from "next/navigation";
 
