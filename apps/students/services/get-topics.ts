@@ -1,7 +1,5 @@
-// services/topics.ts
-
 import { createClient } from "@/lib/server";
-import { EssayTopic, EssayTopicDetail, MotivationalText } from "@repo/types";
+import { EssayTopic, EssayTopicDetail } from "@repo/types";
 
 export async function getTopicsList(): Promise<EssayTopic[]> {
   const supabase = await createClient();

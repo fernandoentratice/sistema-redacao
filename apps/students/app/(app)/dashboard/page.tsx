@@ -13,7 +13,7 @@ export default async function DashboardPage() {
 
   const data = await getDashboardData();
 
-  if (!data) return null; // ou redirect('/login')
+  if (!data) return null;
 
   return (
     <div className="space-y-8 px-4 md:px-10 lg:px-12 py-4">

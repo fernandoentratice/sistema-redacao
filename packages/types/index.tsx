@@ -27,3 +27,40 @@ export interface EssayTopic {
 export interface EssayTopicDetail extends EssayTopic {
   motivational_texts: MotivationalText[];
 }
+
+export type EssayStatus = 'pending' | 'corrected' | 'draft';
+
+export interface Essay {
+  id: string;
+  student_id: string;
+  title: string;
+  thematic_axis: string;
+  content: string;
+  submission_date: string;
+  status: EssayStatus;
+  credit_cost: number;
+  teacher_id: string | null;
+  correction_date: string | null;
+  general_comment: string | null;
+  score_c1: number;
+  score_c2: number;
+  score_c3: number;
+  score_c4: number;
+  score_c5: number;
+  total_score: number;
+  comment_c1: string | null;
+  comment_c2: string | null;
+  comment_c3: string | null;
+  comment_c4: string | null;
+  comment_c5: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Competencies {
+  id: number
+  name: string;
+  description: string;
+  score: number;
+  comment: string | null;
+}

@@ -11,6 +11,7 @@ import {
   Star,
   List
 } from "lucide-react";
+import { getUserEssays } from "@/services/get-essays";
 
 
 type EssayStatus = "pending" | "corrected" | "draft";
@@ -18,52 +19,11 @@ type EssayStatus = "pending" | "corrected" | "draft";
 interface Essay {
   id: string;
   title: string;
-  category: string;
-  date: string;
+  thematic_axis: string;
+  submission_date: string;
   status: EssayStatus;
-  grade?: number;
+  total_score: number;
 }
-
-const mockEssays: Essay[] = [
-  {
-    id: "1",
-    title: "A Importância da Tecnologia na Educação Moderna",
-    category: "Sociedade",
-    date: "12 de Out, 2023",
-    status: "corrected",
-    grade: 960,
-  },
-  {
-    id: "2",
-    title: "Desafios da Preservação na Amazônia",
-    category: "Meio Ambiente",
-    date: "05 de Nov, 2023",
-    status: "pending",
-  },
-  {
-    id: "3",
-    title: "O Impacto das Redes Sociais no Comportamento",
-    category: "Cultura",
-    date: "28 de Set, 2023",
-    status: "corrected",
-    grade: 880,
-  },
-  {
-    id: "4",
-    title: "Caminhos para combater a intolerância religiosa",
-    category: "Direitos Humanos",
-    date: "15 de Jan, 2024",
-    status: "draft",
-  },
-  {
-    id: "5",
-    title: "A democratização do acesso ao cinema no Brasil",
-    category: "Cultura",
-    date: "20 de Fev, 2024",
-    status: "corrected",
-    grade: 920,
-  },
-];
 
 function EssayCard({ essay }: { essay: Essay }) {
   const isCorrected = essay.status === "corrected";
@@ -74,7 +34,7 @@ function EssayCard({ essay }: { essay: Essay }) {
       <div>
         <div className="flex justify-between items-start mb-4">
           <ThemeBadge
-            value={essay.category}
+            value={essay.thematic_axis}
             className="inline-block px-2 py-1 text-[10px] font-bold uppercase tracking-widest" />
         </div>
 
@@ -84,7 +44,7 @@ function EssayCard({ essay }: { essay: Essay }) {
 
         <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
           <Calendar className="size-3.5" />
-          {essay.date}
+          {essay.submission_date}
         </div>
       </div>
 
@@ -110,10 +70,12 @@ function EssayCard({ essay }: { essay: Essay }) {
           )}
         </div>
 
-        {isCorrected && essay.grade && (
+        {isCorrected && essay.total_score && (
           <div className="text-right">
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nota Final</span>
-            <span className="text-2xl font-extrabold text-slate-900">{essay.grade}</span>
+            <span className={`text-2xl font-extrabold ${essay.status === 'pending' ? 'text-slate-400' : 'text-foreground'}`}>
+              {essay.total_score ? essay.total_score : "---"}
+            </span>
           </div>
         )}
 
@@ -128,9 +90,11 @@ function EssayCard({ essay }: { essay: Essay }) {
   );
 }
 
-export default function MyEssaysPage() {
+export default async function MyEssaysPage() {
+  const essays = await getUserEssays();
+
   return (
-    <div className="px-4 md:px-10 lg:px-12 py-4">
+    <div className="min-h-screen px-4 md:px-10 lg:px-12 py-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
           <h2 className="text-3xl font-extrabold tracking-tight mb-2">
@@ -182,7 +146,7 @@ export default function MyEssaysPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-        {mockEssays.map((essay) => (
+        {essays.map((essay) => (
           <Link key={essay.id} href={`/minhas-redacoes/${essay.id}`} className="block h-full">
             <EssayCard essay={essay} />
           </Link>
