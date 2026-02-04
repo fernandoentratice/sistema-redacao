@@ -17,9 +17,10 @@ export default async function TopicsPage() {
   const allTopics = topics || [];
 
   return (
-    <div className="space-y-12 pb-10">
+    <div className="space-y-12 min-h-screen px-4 md:px-10 lg:px-12 py-4 pb-10">
 
       {/* --- SEÇÃO 1: TEMAS SUGERIDOS (Hero) --- */}
+
       {/* <div>
         <div className="flex items-center gap-2 mb-6">
           <Sparkles className="size-6 text-primary fill-primary" />
@@ -61,10 +62,7 @@ export default async function TopicsPage() {
       </div> */}
 
       {/* --- SEÇÃO 2: LISTA GERAL --- */}
-      <div>
-        <TopicsList topics={allTopics} />
-      </div>
-
+      <TopicsList topics={allTopics} />
     </div>
   );
 }

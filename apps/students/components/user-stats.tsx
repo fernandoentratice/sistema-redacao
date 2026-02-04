@@ -42,7 +42,7 @@ export function UserStats() {
       {stats.map((item, index) => (
         <div
           key={index}
-          className="p-6 rounded-4xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+          className="p-6 rounded-4xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className={`p-2.5 rounded-xl ${item.styles.iconBg} ${item.styles.iconColor}`}>

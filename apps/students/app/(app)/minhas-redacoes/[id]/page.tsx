@@ -54,7 +54,7 @@ const mockEssayDetail = {
 export default function EssayFeedbackPage({ params }: { params: { id: string } }) {
 
   return (
-    <div className="min-h-screen  p-6 md:p-10 max-w-[1600px] mx-auto">
+    <div className="px-4 md:px-10 lg:px-12 py-4">
       <div className="mb-8">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div>

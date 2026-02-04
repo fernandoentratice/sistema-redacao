@@ -61,11 +61,10 @@ export function TopicsList({ topics }: TopicsListProps) {
   return (
     <div className="space-y-8">
       {/* --- CABEÇALHO (Título + Busca) --- */}
-      <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-end">
+      <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Compass className="size-6 text-secondary" />
-            <h2 className="text-2xl font-extrabold tracking-tight">Lista de Temas Gerais</h2>
+            <h2 className="text-3xl font-extrabold tracking-tight">Lista de Temas Gerais</h2>
           </div>
           <p className="text-[#8B8265]">
             Navegue por nossa biblioteca completa com centenas de propostas.
@@ -83,6 +82,7 @@ export function TopicsList({ topics }: TopicsListProps) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+
       </div>
 
       {/* --- BARRA DE FILTROS --- */}

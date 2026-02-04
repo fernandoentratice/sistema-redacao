@@ -18,7 +18,7 @@ export function SectionCard({
   children
 }: SectionCardProps) {
   return (
-    <div className="flex flex-col p-6 rounded-3xl border border-border shadow-sm min-h-[300px]">
+    <div className="flex flex-col p-6 rounded-3xl border border-border bg-white shadow-sm min-h-[300px]">
       <div className="flex items-center gap-2 mb-6">
         <div className="size-2 rounded-full border-2 border-primary" />
         <h3 className="font-bold text-foreground">{title}</h3>

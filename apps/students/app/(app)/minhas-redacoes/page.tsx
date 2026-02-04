@@ -130,8 +130,7 @@ function EssayCard({ essay }: { essay: Essay }) {
 
 export default function MyEssaysPage() {
   return (
-    <div className="min-h-screen p-6 md:p-10 max-w-[1600px] mx-auto">
-
+    <div className="px-4 md:px-10 lg:px-12 py-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
           <h2 className="text-3xl font-extrabold tracking-tight mb-2">
