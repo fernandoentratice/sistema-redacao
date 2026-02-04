@@ -16,8 +16,8 @@ export default function AppLayout({
 
   const navItems = [
     { label: "Início", href: "/dashboard" },
-    { label: "Minhas Redações", href: "/minhas-redacoes" },
     { label: "Temas", href: "/temas" },
+    { label: "Minhas Redações", href: "/minhas-redacoes" },
     { label: "Meu perfil", href: "/perfil" },
   ];
 

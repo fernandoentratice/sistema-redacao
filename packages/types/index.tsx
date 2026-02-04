@@ -1,9 +1,3 @@
-export interface UserData {
-  name: string;
-  email: string;
-  avatarUrl: string | null;
-}
-
 export type ThematicAxis =
   | 'Meio Ambiente'
   | 'Questões Sociais'
@@ -13,26 +7,23 @@ export type ThematicAxis =
   | 'Educação'
   | 'Tecnologia'
   | 'Economia';
-
-export type TopicOrigin = 'ENEM' | 'AUTORAL';
-
-export interface MotivatingText {
-  label: string;
-  type: 'text' | 'image' | 'mixed';
-  content?: string;
-  image_url?: string;
-  source?: string;
+export interface MotivationalText {
+  id: string;
+  topic_id: string;
+  text_number: number;
+  body_text: string | null;
+  image_url: string | null;
+  source_reference: string | null;
 }
-
 export interface EssayTopic {
   id: string;
   title: string;
-  description: string;
-  slug: string;
   axis: ThematicAxis;
-  origin: TopicOrigin;
-  exam_year: number | null;
-  motivating_texts: MotivatingText[];
+  source_type: 'ENEM' | 'AUTORAL';
+  source_year: number | null;
   active: boolean;
   created_at: string;
+}
+export interface EssayTopicDetail extends EssayTopic {
+  motivational_texts: MotivationalText[];
 }

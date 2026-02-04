@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react"; // Use useFormState se for Next.js 14 ou anterior
+import { useState, useActionState } from "react";
 import { Save, AlertCircle } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import { submitEssay } from "@/app/actions/submit-essay";
@@ -13,11 +13,14 @@ interface EssayEditorFormProps {
 
 export function EssayEditorForm({ topicTitle, topicAxis }: EssayEditorFormProps) {
   const [text, setText] = useState("");
-  // Estado da Server Action
-  const [state, formAction] = useActionState(submitEssay, {});
+
+  const [state, formAction] = useActionState(
+    submitEssay.bind(null, topicTitle, topicAxis),
+    { error: "" }
+  );
 
   const MAX_CHARS = 10000;
-  const MIN_CHARS = 100; // Mínimo para liberar o botão
+  const MIN_CHARS = 100;
   const charCount = text.length;
   const progressPercentage = Math.min((charCount / MAX_CHARS) * 100, 100);
 
@@ -27,7 +30,7 @@ export function EssayEditorForm({ topicTitle, topicAxis }: EssayEditorFormProps)
 
   return (
     <form action={formAction} className="flex flex-col h-full gap-4">
-      {/* INPUTS OCULTOS: Passam dados do tema para a Server Action */}
+
       <input type="hidden" name="title" value={topicTitle} />
       <input type="hidden" name="thematicAxis" value={topicAxis} />
 
@@ -47,7 +50,7 @@ export function EssayEditorForm({ topicTitle, topicAxis }: EssayEditorFormProps)
           </div>
         </div>
 
-        {/* Exibição de Erro vindo do Server */}
+
         {state.error && (
           <div className="mx-6 mt-6 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-sm font-medium animate-in slide-in-from-top-2">
             <AlertCircle className="size-4 shrink-0" />
@@ -62,7 +65,7 @@ export function EssayEditorForm({ topicTitle, topicAxis }: EssayEditorFormProps)
 
           <textarea
             id="essay-text"
-            name="content" // Importante: O Server Action busca por esse nome
+            name="content"
             className="flex-1 w-full resize-none outline-none text-slate-700 leading-relaxed placeholder:text-slate-300 text-base font-medium bg-transparent"
             placeholder="Primeiro, escreva sua redação à mão, como no dia da prova. Depois, transcreva-a aqui."
             value={text}
@@ -92,11 +95,10 @@ export function EssayEditorForm({ topicTitle, topicAxis }: EssayEditorFormProps)
 
         <div className="p-5 border-t border-slate-200 flex flex-col sm:flex-row items-center gap-4 justify-between">
 
-          {/* Botão extraído para suportar useFormStatus */}
           <SubmitEssayButton disabled={isOverLimit || isTooShort} />
 
           <Button
-            type="button" // Type button para não submeter o form
+            type="button"
             variant="outline"
             disabled={isTooShort}
             className="w-full sm:w-auto font-bold rounded-full h-12 px-6 gap-2"

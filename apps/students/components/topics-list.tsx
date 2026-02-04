@@ -50,7 +50,7 @@ interface TopicsListProps {
 export function TopicsList({ topics }: TopicsListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<"Todos" | ThematicAxis>("Todos");
-
+  console.log(topics)
   const filteredTopics = topics.filter((topic) => {
     const matchesSearch = topic.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = activeFilter === "Todos" || topic.axis === activeFilter;
@@ -176,7 +176,7 @@ export function TopicsList({ topics }: TopicsListProps) {
                     asChild
                     className="rounded-full gap-2 text-xs font-bold bg-primary text-slate-900 shadow-sm h-10 px-4  whitespace-nowrap"
                   >
-                    <Link href={`/minhas-redacoes/nova-redacao?topic=${topic.slug}`}>
+                    <Link href={`/minhas-redacoes/nova-redacao?id=${topic.id}`}>
                       Iniciar Redação
                       <NotebookPen className="size-3.5" />
                     </Link>

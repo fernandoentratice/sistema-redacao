@@ -4,12 +4,18 @@ import { createClient } from "@/lib/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-export type EssayState = {
-  error?: string | null;
+// Defina o tipo do retorno para o TypeScript ficar feliz
+export type ActionState = {
+  error?: string;
   success?: boolean;
-};
+} | null;
 
-export async function submitEssay(prevState: EssayState, formData: FormData): Promise<EssayState> {
+export async function submitEssay(
+  title: string,
+  axis: string,
+  prevState: ActionState,
+  formData: FormData
+) {
   const supabase = await createClient();
 
   const {
@@ -20,8 +26,6 @@ export async function submitEssay(prevState: EssayState, formData: FormData): Pr
     return { error: "Você precisa estar logado para enviar." };
   }
 
-  const title = formData.get("title") as string;
-  const thematicAxis = formData.get("thematicAxis") as string;
   const content = formData.get("content") as string;
 
   if (!content || content.length < 50) {
@@ -32,7 +36,7 @@ export async function submitEssay(prevState: EssayState, formData: FormData): Pr
     const { error } = await supabase.rpc("submit_essay", {
       p_student_id: user.id,
       p_title: title,
-      p_thematic_axis: thematicAxis || "Geral",
+      p_thematic_axis: axis || "Geral",
       p_content: content,
       p_cost: 1,
     });
