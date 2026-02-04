@@ -2,6 +2,7 @@
 
 import { FileText, NotebookPen } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
+import Link from "next/link";
 
 interface Essay {
   id: string;
@@ -24,9 +25,11 @@ export function RecentEssaysList({ hasData = false, essays = [] }: RecentEssaysL
           <FileText className="size-5" /> Redações Recentes
         </h3>
         {hasData && (
-          <a href="/minhas-redacoes" className="text-sm font-bold text-secondary hover:underline">
-            Ver todas as redações
-          </a>
+          <Link href="/minhas-redacoes">
+            <p className="text-sm font-bold text-secondary hover:underline">
+              Ver todas as redações
+            </p>
+          </Link>
         )}
       </div>
 
@@ -65,7 +68,7 @@ export function RecentEssaysList({ hasData = false, essays = [] }: RecentEssaysL
                   <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">
                     Nota
                   </span>
-                  <span className="text-2xl font-extrabold text-foreground">
+                  <span className={`text-2xl font-extrabold ${essay.status === 'pending' ? 'text-slate-400' : 'text-foreground'}`}>
                     {essay.score ? essay.score : "---"}
                   </span>
                 </div>
