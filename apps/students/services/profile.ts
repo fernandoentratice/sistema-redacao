@@ -16,7 +16,7 @@ export async function getProfileData() {
       .from("essays")
       .select("created_at, total_score")
       .eq("student_id", user.id)
-      .eq("status", "corrected") // ou "done"
+      .eq("status", "corrected")
       .order("created_at", { ascending: true }),
   ]);
 

@@ -4,7 +4,6 @@ import { createClient } from "@/lib/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-// Defina o tipo do retorno para o TypeScript ficar feliz
 export type ActionState = {
   error?: string;
   success?: boolean;

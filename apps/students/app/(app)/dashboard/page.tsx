@@ -17,7 +17,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 px-4 md:px-10 lg:px-12 py-4">
-      {/* HEADER */}
+
       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex flex-col text-center md:text-left">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">

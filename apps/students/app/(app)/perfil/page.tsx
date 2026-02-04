@@ -7,38 +7,12 @@ import { getProfileData } from "@/services/profile";
 import { FileText, TrendingUp } from "lucide-react";
 import { redirect } from "next/navigation";
 
-const userProfile = {
-  name: "Gabriel Silva",
-  email: "gabriel.silva@estudante.com.br",
-  role: "Estudante",
-  avatarUrl: null
-};
-
-const MOCK_SCORES = {
-  C1: 180,
-  C2: 160,
-  C3: 200,
-  C4: 140,
-  C5: 165,
-};
-
-const MOCK_EVOLUTION = [
-  { month: "MAI", score: 380 },
-  { month: "JUN", score: 520 },
-  { month: "JUL", score: 680 },
-  { month: "AGO", score: 640 },
-  { month: "SET", score: 810 },
-  { month: "OUT", score: 920 },
-];
-
 export default async function ProfilePage() {
   const data = await getProfileData();
 
   if (!data) {
     redirect("/login");
   }
-
-  const hasData = true;
 
   return (
     <div className="min-h-screen p-6 md:px-20 items-center">

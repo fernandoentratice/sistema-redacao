@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/server"; // Ajuste conforme seu path real
+import { createClient } from "@/lib/server";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { FileText, AlertCircle } from "lucide-react";
 import { EssayEditorForm } from "@/components/essay-editor-form";
@@ -10,7 +10,6 @@ type Props = {
   searchParams: Promise<{ id?: string }>;
 };
 
-// Componente visual do texto motivador
 function SidebarMotivatingText({ item }: { item: MotivationalText }) {
   return (
     <div className="mb-6 last:mb-0">
@@ -19,7 +18,6 @@ function SidebarMotivatingText({ item }: { item: MotivationalText }) {
       </span>
 
       <div className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
-        {/* Correção: Usando body_text ao invés de content */}
         {item.body_text && (
           <p className="whitespace-pre-line hover:line-clamp-none transition-all">
             {item.body_text}
@@ -52,12 +50,10 @@ export default async function NewEssayPage(props: Props) {
   const searchParams = await props.searchParams;
   const topicId = searchParams.id;
 
-  // Se não tiver ID, volta para a lista
   if (!topicId) {
     redirect("/temas");
   }
 
-  // Busca usando o JOIN para trazer os textos
   const { data, error } = await supabase
     .from("essay_topics")
     .select(`
@@ -77,10 +73,8 @@ export default async function NewEssayPage(props: Props) {
     );
   }
 
-  // Cast para o tipo detalhado que inclui o array motivational_texts
   const essayTopic = data as EssayTopicDetail;
 
-  // Ordenação dos textos (garantir 1, 2, 3...)
   const texts = essayTopic.motivational_texts
     ? [...essayTopic.motivational_texts].sort((a, b) => a.text_number - b.text_number)
     : [];
