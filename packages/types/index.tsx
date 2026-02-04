@@ -5,14 +5,14 @@ export interface UserData {
 }
 
 export type ThematicAxis =
-  | 'Educação'
   | 'Meio Ambiente'
-  | 'Cidadania e Direitos Humanos'
+  | 'Questões Sociais'
   | 'Saúde'
   | 'Cultura'
+  | 'Direitos e Cidadania'
+  | 'Educação'
   | 'Tecnologia'
-  | 'Trabalho'
-  | 'Segurança';
+  | 'Economia';
 
 export type TopicOrigin = 'ENEM' | 'AUTORAL';
 
