@@ -50,7 +50,7 @@ interface TopicsListProps {
 export function TopicsList({ topics }: TopicsListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<"Todos" | ThematicAxis>("Todos");
-  console.log(topics)
+
   const filteredTopics = topics.filter((topic) => {
     const matchesSearch = topic.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = activeFilter === "Todos" || topic.axis === activeFilter;
