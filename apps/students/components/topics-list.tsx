@@ -56,10 +56,10 @@ export function TopicsList({ topics }: TopicsListProps) {
     const matchesFilter = activeFilter === "Todos" || topic.axis === activeFilter;
     return matchesSearch && matchesFilter;
   });
-
+  console.log(filteredTopics)
   return (
     <div className="space-y-8">
-      {/* --- CABEÇALHO (Título + Busca) --- */}
+
       <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -70,7 +70,6 @@ export function TopicsList({ topics }: TopicsListProps) {
           </p>
         </div>
 
-        {/* Input de Busca */}
         <div className="relative w-full lg:w-[450px]">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
           <input
@@ -81,10 +80,8 @@ export function TopicsList({ topics }: TopicsListProps) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
       </div>
 
-      {/* --- BARRA DE FILTROS --- */}
       <div className="flex flex-col gap-4">
         <span className="text-slate-400 font-bold text-xs uppercase tracking-widest whitespace-nowrap">
           Filtrar por:
@@ -114,7 +111,6 @@ export function TopicsList({ topics }: TopicsListProps) {
         </div>
       </div>
 
-      {/* --- TABELA DE TEMAS --- */}
       <div className="rounded-4xl border border-slate-200 overflow-hidden shadow-sm mt-8">
 
         <div className="hidden lg:grid grid-cols-12 gap-4 px-8 py-5 border-b border-slate-100 bg-slate-50/50">
@@ -129,7 +125,6 @@ export function TopicsList({ topics }: TopicsListProps) {
           </div>
         </div>
 
-        {/* Linhas */}
         <div className="divide-y divide-slate-100">
           {filteredTopics.length > 0 ? (
             filteredTopics.map((topic) => (
@@ -138,13 +133,12 @@ export function TopicsList({ topics }: TopicsListProps) {
                 className="grid grid-cols-1 lg:grid-cols-12 gap-4 px-8 py-5 items-center hover:bg-slate-50 transition-colors group"
               >
 
-                {/* Título (Ocupa 6 colunas no Desktop) */}
                 <div className="lg:col-span-6">
                   <h4 className="font-bold text-slate-900  leading-snug group-hover:text-[#1E3A8A] transition-colors wrap-break-word">
                     {topic.title}
                   </h4>
 
-                  {/* Badge Mobile/Tablet (Aparece até chegar em telas Grandes) */}
+                  {/* Badge Mobile/Tablet */}
                   <div className="lg:hidden mt-3">
                     <ThemeBadge
                       className="inline-flex px-3 py-1 text-[10px] font-bold uppercase rounded-full border"
@@ -152,20 +146,20 @@ export function TopicsList({ topics }: TopicsListProps) {
                   </div>
                 </div>
 
-                {/* Badge Desktop (Ocupa 3 colunas agora - Mais espaço!) */}
+                {/* Badge Desktop */}
                 <div className="hidden lg:flex lg:col-span-3 justify-center px-2">
                   <ThemeBadge
-                    className="w-full max-w-[200px] px-2 py-1.5 text-[10px] font-bold uppercase rounded-full border tracking-wide 
+                    className="w-full max-w-40 px-2 py-1.5 text-[10px] font-bold uppercase rounded-full border tracking-wide 
                     h-auto whitespace-normal text-center flex items-center justify-center min-h-7 leading-tight"
                     value={topic.axis} />
                 </div>
 
-                {/* Botões (Ocupa 3 colunas) */}
+
                 <div className="lg:col-span-3 flex flex-row gap-2 justify-end mt-4 lg:mt-0">
                   <TopicDetailsDialog topic={topic}>
                     <Button
                       variant="outline"
-                      className="w-full sm:w-auto rounded-full gap-2 text-xs font-bold h-10 border-slate-200 text-[#1E3A8A] hover:bg-blue-50 hover:text-blue-900 hover:border-blue-200 px-4 whitespace-nowrap "
+                      className="rounded-full text-xs font-bold h-10 border-slate-200 text-[#1E3A8A] hover:bg-blue-50 hover:text-blue-900 hover:border-blue-200 whitespace-nowrap "
                     >
                       Ver Proposta
                       <Eye className="size-4.5" />
@@ -174,7 +168,7 @@ export function TopicsList({ topics }: TopicsListProps) {
 
                   <Button
                     asChild
-                    className="rounded-full gap-2 text-xs font-bold bg-primary text-slate-900 shadow-sm h-10 px-4  whitespace-nowrap"
+                    className="rounded-full text-xs font-bold bg-primary shadow-sm h-10 whitespace-nowrap"
                   >
                     <Link href={`/minhas-redacoes/nova-redacao?id=${topic.id}`}>
                       Iniciar Redação

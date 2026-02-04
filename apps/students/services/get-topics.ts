@@ -1,5 +1,7 @@
+"use server";
+
 import { createClient } from "@/lib/server";
-import { EssayTopic, EssayTopicDetail } from "@repo/types";
+import { EssayTopic, EssayTopicDetail, MotivationalText } from "@repo/types";
 
 export async function getTopicsList(): Promise<EssayTopic[]> {
   const supabase = await createClient();
@@ -27,17 +29,17 @@ export async function getTopicDetails(id: string): Promise<EssayTopicDetail | nu
     .eq("id", id)
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Erro ao buscar detalhes do tema:", error);
+    return null;
+  }
   if (!data) return null;
 
-  //TODO: entender a necessidade de ordenação qui
-
-  // Ordenação (Mantive a lógica, ela roda super rápido no Node.js do servidor)
-  // if (data.motivational_texts) {
-  //   data.motivational_texts.sort(
-  //     (a: MotivationalText, b: MotivationalText) => a.text_number - b.text_number
-  //   );
-  // }
+  if (data.motivational_texts) {
+    data.motivational_texts.sort(
+      (a: MotivationalText, b: MotivationalText) => a.text_number - b.text_number
+    );
+  }
 
   return data as EssayTopicDetail;
 }
