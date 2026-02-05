@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from "@repo/ui/components/dialog";
 import { User, Camera, Loader2 } from "lucide-react";
+import { updateProfile } from "@/services/update-profile";
 
 interface UserData {
   name: string;
@@ -20,12 +21,12 @@ interface EditProfileModalProps {
   isOpen: boolean;
   onClose: (open: boolean) => void;
   initialData: UserData;
-  onSave: (newData: { name: string; avatarUrl: string | null }) => Promise<void>;
 }
 
-export function EditProfileModal({ isOpen, onClose, initialData, onSave }: EditProfileModalProps) {
+export function EditProfileModal({ isOpen, onClose, initialData }: EditProfileModalProps) {
   const [name, setName] = useState(initialData.name);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialData.avatarUrl);
+  const [avatarFile, setAvatarFile] = useState<File | null>()
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,14 +35,41 @@ export function EditProfileModal({ isOpen, onClose, initialData, onSave }: EditP
     if (file) {
       const url = URL.createObjectURL(file);
       setAvatarPreview(url);
+      setAvatarFile(file);
     }
   };
 
   const handleSubmit = async () => {
+    const nameChanged = name !== initialData.name;
+    const fileChanged = !!avatarFile;
+
+    if (!nameChanged && !fileChanged) {
+      onClose(false);
+      return;
+    }
+
     setIsLoading(true);
-    await onSave({ name, avatarUrl: avatarPreview });
-    setIsLoading(false);
-    onClose(false);
+
+    try {
+      const payload: { name?: string; avatarFile?: File } = {};
+
+      if (nameChanged) payload.name = name;
+      if (fileChanged) payload.avatarFile = avatarFile!;
+
+      await updateProfile(payload)
+      // const result = await updateProfile(payload);
+
+      // if (result.success) {
+      //   // Opcional: toast.success("Perfil atualizado!")
+      //   onClose(false);
+      // }
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+      // Opcional: toast.error("Falha ao salvar")
+    } finally {
+      setIsLoading(false);
+      onClose(false);
+    }
   };
 
   return (
@@ -57,7 +85,7 @@ export function EditProfileModal({ isOpen, onClose, initialData, onSave }: EditP
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-6 mt-4">
-          {/* Avatar Upload */}
+
           <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             <div className="size-32 rounded-full bg-slate-50 border-4 border-[#FFF9E6] flex items-center justify-center overflow-hidden ring-4 ring-transparent hover:ring-[#FFF9E6] transition-all">
               {avatarPreview ? (
@@ -78,7 +106,7 @@ export function EditProfileModal({ isOpen, onClose, initialData, onSave }: EditP
               onChange={handleFileChange}
             />
           </div>
-
+          <p className="text-[10px] text-slate-500">* Tamanho máximo: 5MB</p>
           <div className="w-full space-y-4">
             <div>
               <label className="block text-sm font-bold text-slate-600 mb-1.5">Nome Completo</label>

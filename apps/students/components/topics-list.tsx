@@ -56,7 +56,7 @@ export function TopicsList({ topics }: TopicsListProps) {
     const matchesFilter = activeFilter === "Todos" || topic.axis === activeFilter;
     return matchesSearch && matchesFilter;
   });
-  console.log(filteredTopics)
+
   return (
     <div className="space-y-8">
 

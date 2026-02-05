@@ -1,3 +1,4 @@
+import { UserData } from "@repo/types";
 import { createClient } from "@/lib/server";
 import { formatMonth } from "@repo/utils";
 
@@ -10,7 +11,11 @@ export async function getProfileData() {
   if (!user) return null;
 
   const [profileRes, statsRes, historyRes] = await Promise.all([
-    supabase.from("profiles").select("full_name, credits_balance").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("full_name, credits_balance, avatar_url")
+      .eq("id", user.id)
+      .single(),
     supabase.from("student_performance_stats").select("*").eq("student_id", user.id).maybeSingle(),
     supabase
       .from("essays")
@@ -29,8 +34,8 @@ export async function getProfileData() {
       name: profile?.full_name || user.user_metadata?.full_name || "Estudante",
       email: user.email,
       credits: profile?.credits_balance ?? 0,
-      avatarUrl: user.user_metadata?.avatar_url || null,
-    },
+      avatarUrl: profile?.avatar_url || null,
+    } as UserData,
     competencies: {
       C1: Math.round(stats?.avg_c1 || 0),
       C2: Math.round(stats?.avg_c2 || 0),

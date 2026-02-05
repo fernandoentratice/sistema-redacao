@@ -4,26 +4,17 @@ import { useState } from "react";
 import { Button } from "@repo/ui/components/button";
 import { User, Mail, UserCog, LockKeyhole } from "lucide-react";
 import { CreditBalance } from "@/components/credit-balance";
-import { UserData } from "@repo/types";
 import { EditProfileModal } from "@/components/edit-profile-modal";
 import { ResetPasswordModal } from "@/components/reset-password-modal";
+import { UserData } from "@repo/types";
+import Image from "next/image";
+interface ProfileHeaderProps {
+  user: UserData;
+}
 
-export function ProfileHeader({ user }: { user: UserData }) {
+export function ProfileHeader({ user }: ProfileHeaderProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
-
-  const [currentUser, setCurrentUser] = useState(user);
-
-
-  const handleUpdateProfile = async (newData: { name: string; avatarUrl: string | null }) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    setCurrentUser(prev => ({
-      ...prev,
-      name: newData.name,
-      avatarUrl: newData.avatarUrl
-    }));
-  };
 
   return (
     <>
@@ -31,11 +22,13 @@ export function ProfileHeader({ user }: { user: UserData }) {
 
         <div className="shrink-0 relative">
           <div className="size-32 md:size-40 rounded-full bg-slate-100 border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
-            {currentUser.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={currentUser.avatarUrl}
+            {user.avatarUrl ? (
+
+              <Image
+                src={user.avatarUrl}
                 alt="Foto de perfil"
+                width={200}
+                height={200}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -49,12 +42,12 @@ export function ProfileHeader({ user }: { user: UserData }) {
 
             <div className="flex flex-col items-center md:items-start gap-2">
               <h2 className="text-3xl font-extrabold text-slate-900">
-                {currentUser.name}
+                {user.name}
               </h2>
 
               <div className="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-1 rounded-full border border-slate-100 font-medium">
                 <Mail className="size-3.5" />
-                {currentUser.email}
+                {user.email}
               </div>
             </div>
 
@@ -85,14 +78,13 @@ export function ProfileHeader({ user }: { user: UserData }) {
       <EditProfileModal
         isOpen={isEditOpen}
         onClose={setIsEditOpen}
-        initialData={currentUser}
-        onSave={handleUpdateProfile}
+        initialData={user}
       />
 
       <ResetPasswordModal
         isOpen={isResetOpen}
         onClose={setIsResetOpen}
-        userEmail={currentUser.email}
+        userEmail={user.email}
       />
     </>
   );

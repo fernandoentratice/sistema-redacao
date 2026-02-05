@@ -17,14 +17,7 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-screen p-6 md:px-20 items-center">
 
-      <ProfileHeader
-        user={{
-          name: data.user.name,
-          email: data.user.email || "",
-          role: "Estudante",
-          avatarUrl: data?.user.avatarUrl
-        }}
-      />
+      <ProfileHeader user={data.user} />
 
       <div className="my-6">
         <h2 className="text-3xl font-extrabold tracking-tight mb-2">

@@ -28,6 +28,13 @@ export interface EssayTopicDetail extends EssayTopic {
   motivational_texts: MotivationalText[];
 }
 
+export interface UserData {
+  name: string;
+  email: string;
+  credits: number;
+  avatarUrl: string | null;
+}
+
 export type EssayStatus = 'pending' | 'corrected' | 'draft';
 
 export interface Essay {
