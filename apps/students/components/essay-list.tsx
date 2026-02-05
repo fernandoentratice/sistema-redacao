@@ -114,13 +114,6 @@ export function EssayList({ initialEssays }: EssayListProps) {
               ? `Não encontramos nada para "${searchTerm}". Tente buscar por outro título ou eixo temático.`
               : "Você ainda não enviou nenhuma redação para correção."}
           </p>
-          {!searchTerm && (
-            <Link href="/temas" className="mt-6">
-              <button className="px-6 py-2 bg-[#EBC84C] hover:bg-[#d9b842] text-slate-900 font-bold rounded-full text-sm transition-all shadow-md shadow-yellow-500/10">
-                Escolher um tema
-              </button>
-            </Link>
-          )}
         </div>
       )}
     </div>

@@ -75,7 +75,7 @@ export function TopicsList({ topics }: TopicsListProps) {
           <input
             type="text"
             placeholder="Pesquisar por título, eixo ou palavra-chave..."
-            className="w-full pl-14 pr-6 py-4 rounded-full border border-slate-200 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm text-sm font-medium"
+            className="w-full pl-14 pr-6 py-4 rounded-full bg-white border border-slate-200 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm text-sm font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
