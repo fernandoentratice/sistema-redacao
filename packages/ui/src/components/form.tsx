@@ -7,6 +7,7 @@ import {
   Controller,
   FormProvider,
   useFormContext,
+  UseFormReturn,
   useFormState,
   type ControllerProps,
   type FieldPath,
@@ -16,7 +17,9 @@ import {
 import { cn } from "@repo/ui/lib/utils"
 import { Label } from "@repo/ui/components/label"
 
-const Form = FormProvider
+const Form = FormProvider as <TFieldValues extends FieldValues = FieldValues>(
+  props: UseFormReturn<TFieldValues> & { children?: React.ReactNode }
+) => React.ReactElement
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
