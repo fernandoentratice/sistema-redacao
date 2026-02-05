@@ -51,7 +51,7 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
               </div>
             </div>
 
-            <CreditBalance amount={12} />
+            <CreditBalance amount={user.credits} />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -62,15 +62,15 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
               <UserCog className="size-4.5 mr-2" />
               Editar informações
             </Button>
-
-            <Button
+            {/* TODO: reset de senha */}
+            {/* <Button
               onClick={() => setIsResetOpen(true)}
               variant="ghost"
               className="font-bold text-slate-600 bg-slate-100 hover:text-slate-900 hover:bg-slate-200 rounded-full h-11 px-6"
             >
               <LockKeyhole className="size-4.5 mr-2" />
               Redefinir senha
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>
@@ -81,11 +81,11 @@ export function ProfileHeader({ user }: ProfileHeaderProps) {
         initialData={user}
       />
 
-      <ResetPasswordModal
+      {/* <ResetPasswordModal
         isOpen={isResetOpen}
         onClose={setIsResetOpen}
         userEmail={user.email}
-      />
+      /> */}
     </>
   );
 }

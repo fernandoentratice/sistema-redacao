@@ -111,7 +111,7 @@ export function TopicsList({ topics }: TopicsListProps) {
         </div>
       </div>
 
-      <div className="rounded-4xl border border-slate-200 overflow-hidden shadow-sm mt-8">
+      <div className="rounded-4xl bg-white border border-slate-200 overflow-hidden shadow-sm mt-8">
 
         <div className="hidden lg:grid grid-cols-12 gap-4 px-8 py-5 border-b border-slate-100 bg-slate-50/50">
           <div className="col-span-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
