@@ -19,7 +19,8 @@
   },
   "devDependencies": {
     "tsup": "^8.0.0",
-    "typescript": "latest"
+    "typescript": "latest",
+    "@repo/typescript-config": "workspace:*"
   },
   "dependencies": {
     "date-fns": "^3.0.0" 
