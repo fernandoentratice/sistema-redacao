@@ -93,10 +93,10 @@ export default async function EssayFeedbackPage({ params }: { params: Promise<{ 
               {data.title}
             </h2>
 
-            <div
-              className="prose prose-slate max-w-none text-slate-600 text-justify text-lg"
-              dangerouslySetInnerHTML={{ __html: data.content }}
-            />
+            <p className="prose prose-slate whitespace-pre-line max-w-none text-slate-600 text-justify text-lg">
+              {data.content}
+            </p>
+
           </div>
 
           <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">

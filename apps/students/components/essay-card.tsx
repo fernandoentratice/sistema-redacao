@@ -10,7 +10,7 @@ interface EssayCardProps {
 }
 
 export function EssayCard({ essay }: EssayCardProps) {
-  const isCorrected = essay.status === "corrected";
+  const isCorrected = essay.status === "done";
   const isPending = essay.status === "pending";
   const isDraft = essay.status === "draft";
 

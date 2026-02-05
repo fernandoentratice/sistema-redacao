@@ -10,6 +10,7 @@ interface UserStatsProps {
 
 export function UserStats({ stats }: UserStatsProps) {
   //TODO: ajustar footers
+
   const statCards = [
     {
       label: "Média Geral",
