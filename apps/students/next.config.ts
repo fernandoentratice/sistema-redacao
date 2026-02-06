@@ -2,19 +2,16 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: [
-    "eslint-config",
-    "hooks",
-    "prettier-config",
-    "tailwind-config",
-    "types",
-    "typescript-config",
-    "ui",
-    "utils",
-    "validators",
+    "@repo/eslint-config",
+    "@repo/hooks",
+    "@repo/prettier-config",
+    "@repo/tailwind-config",
+    "@repo/types",
+    "@repo/typescript-config",
+    "@repo/ui",
+    "@repo/utils",
+    "@repo/validators",
   ],
-  // typescript: {
-  //   ignoreBuildErrors: true,
-  // },
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",
