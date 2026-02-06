@@ -12,9 +12,9 @@ const nextConfig: NextConfig = {
     "utils",
     "validators",
   ],
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // typescript: {
+  //   ignoreBuildErrors: true,
+  // },
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",
