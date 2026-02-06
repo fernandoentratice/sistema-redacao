@@ -12,7 +12,7 @@ const lexend = Lexend({
 
 
 export const metadata: Metadata = {
-  title: "Redação 1000 - Alunos",
+  title: "Projeto 1000 - Alunos",
   description: "Sistema de correção de redações para o ENEM",
 };
 

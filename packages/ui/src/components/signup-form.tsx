@@ -66,7 +66,7 @@ export function SignUpForm({ appType, onSubmit, isSubmitting = false }: SignUpFo
 
       <div className="mb-8 flex flex-col items-center gap-3">
         <h1 className="text-3xl font-bold tracking-tight">
-          Redação 1000
+          Projeto 1000
         </h1>
       </div>
 

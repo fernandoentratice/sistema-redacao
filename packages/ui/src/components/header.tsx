@@ -24,7 +24,7 @@ export function Header({
   return (
     <header className="sticky top-0 z-50 w-full border-b border-solid border-slate-200 bg-white/80 backdrop-blur-md px-6 h-16 flex items-center justify-between shadow-sm">
       <span className="font-bold text-xl text-primary tracking-tight">
-        Redação 1000
+        Projeto 1000
       </span>
 
       <div className="hidden md:flex! items-center justify-end gap-6">
