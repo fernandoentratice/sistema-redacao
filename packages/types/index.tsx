@@ -1,0 +1,73 @@
+export type ThematicAxis =
+  | 'Meio Ambiente'
+  | 'Questões Sociais'
+  | 'Saúde'
+  | 'Cultura'
+  | 'Direitos e Cidadania'
+  | 'Educação'
+  | 'Tecnologia'
+  | 'Economia';
+export interface MotivationalText {
+  id: string;
+  topic_id: string;
+  text_number: number;
+  body_text: string | null;
+  image_url: string | null;
+  source_reference: string | null;
+}
+export interface EssayTopic {
+  id: string;
+  title: string;
+  axis: ThematicAxis;
+  source_type: 'ENEM' | 'AUTORAL';
+  source_year: number | null;
+  active: boolean;
+  created_at: string;
+}
+export interface EssayTopicDetail extends EssayTopic {
+  motivational_texts: MotivationalText[];
+}
+
+export interface UserData {
+  name: string;
+  email: string;
+  credits: number;
+  avatarUrl: string | null;
+}
+
+export type EssayStatus = 'pending' | 'done' | 'draft';
+
+export interface Essay {
+  id: string;
+  student_id: string;
+  title: string;
+  thematic_axis: string;
+  content: string;
+  submission_date: string;
+  status: EssayStatus;
+  credit_cost: number;
+  teacher_id: string | null;
+  correction_date: string | null;
+  general_comment: string | null;
+  score_c1: number;
+  score_c2: number;
+  score_c3: number;
+  score_c4: number;
+  score_c5: number;
+  total_score: number;
+  comment_c1: string | null;
+  comment_c2: string | null;
+  comment_c3: string | null;
+  comment_c4: string | null;
+  comment_c5: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Competencies {
+  id: number
+  name: string;
+  description: string;
+  score: number;
+  comment: string | null;
+}

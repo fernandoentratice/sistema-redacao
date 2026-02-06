@@ -1,3 +1,161 @@
 /* Component-level styles for the UI package */
-@import "tailwindcss" prefix(ui);
+
+@import "tailwindcss";
 @import "@repo/tailwind-config";
+@source "./components";
+
+
+@theme {
+  /* Mapeando as variáveis do Shadcn para o Tailwind */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* Variáveis Customizadas (Sucesso) */
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --font-sans: var(--font-lexend), ui-sans-serif, system-ui, sans-serif;
+
+  /* Animações */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0
+    }
+
+    to {
+      height: var(--radix-accordion-content-height)
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height)
+    }
+
+    to {
+      height: 0
+    }
+  }
+}
+
+@layer base {
+  :root {
+    /* Background: Branco (#FFFFFF) */
+    --background: 0 0% 100%;
+
+    /* Textos Principais: Cinza Escuro (#333333) */
+    --foreground: 0 0% 20%;
+
+    /* Cards: Branco */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 20%;
+
+    /* Popovers: Branco */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 20%;
+
+    /* PRIMÁRIA: Amarelo Dourado (#F7C325) 
+       H: 45, S: 93%, L: 56% 
+    */
+    --primary: 45.1 93.3% 55.7%;
+    /* Texto sobre a primária deve ser ESCURO para leitura (#333333) */
+    --primary-foreground: 0 0% 20%;
+
+    /* SECUNDÁRIA: Azul Vibrante (#1D61E7)
+       H: 220, S: 84%, L: 51%
+    */
+    --secondary: 219.8 84.2% 51%;
+    /* Texto sobre a secundária deve ser BRANCO */
+    --secondary-foreground: 0 0% 100%;
+
+    /* MUTED (Elementos desabilitados ou fundo sutil) 
+       Usando seu "Azul Suave" (#E3F2FD) aqui fica ótimo para áreas de destaque leve
+    */
+    --muted: 205.4 86.7% 94.1%;
+    --muted-foreground: 0 0% 33.3%;
+    /* Seu Cinza Médio (#555555) */
+
+    /* ACCENT (Hovens em dropdowns, listas) */
+    --accent: 205.4 86.7% 94.1%;
+    /* Azul Suave */
+    --accent-foreground: 219.8 84.2% 51%;
+    /* Texto Azul Vibrante no hover */
+
+    /* DESTRUCTIVE (Erro/Perigo) - Vermelho Padrão */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* BORDAS e INPUTS (Cinza claro sutil baseados no seu cinza médio) */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 45.1 93.3% 55.7%;
+    /* --ring: 219.8 84.2% 51%; */
+    /* Foco usa o Azul Vibrante */
+
+    /* Raio da borda (Border Radius) */
+    --radius: 0.5rem;
+
+
+    /* SUCESSO: Verde (#28A745) */
+    --success: 133.7 61.1% 40.6%;
+    --success-foreground: 0 0% 100%;
+
+    /* VARIÁVEL EXTRA: O Azul Suave puro para usar em backgrounds específicos */
+    --soft-blue: 205.4 86.7% 94.1%;
+  }
+
+  * {
+    @apply border-border;
+    font-family: var(--font-lexend), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  .bg-gradient-soft {
+    background: linear-gradient(135deg, #e0f2fe 0%, #ffffff 100%);
+  }
+}
