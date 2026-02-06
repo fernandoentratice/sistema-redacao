@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  transpilePackages: [
+    "eslint-config",
+    "hooks",
+    "prettier-config",
+    "tailwind-config",
+    "types",
+    "typescript-config",
+    "ui",
+    "utils",
+    "validators",
+  ],
   typescript: {
     ignoreBuildErrors: true,
   },
