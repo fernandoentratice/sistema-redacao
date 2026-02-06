@@ -1,7 +1,6 @@
 import { CreditBalance } from "@/components/credit-balance";
 import { StatCard } from "@/components/stat-card";
-import { Button } from "@repo/ui/components/button";
-import { BookOpen, FileCheck, FileText, Plus, TrendingUp, Upload } from "lucide-react";
+import { BookOpen, FileCheck, FileText, TrendingUp, Upload } from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { CompetenceList } from "@/components/competence-list";
 import { EvolutionGraph } from "@/components/evolution-graph";
