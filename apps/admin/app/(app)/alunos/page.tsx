@@ -21,6 +21,18 @@ export default async function StudentsPage({
   const page = Number(resolvedParams?.page) || 1;
   const suspenseKey = JSON.stringify(resolvedParams);
   const filters = parseStudentsFilters(resolvedParams);
+  const sortParam =
+    typeof resolvedParams.sort === "string"
+      ? resolvedParams.sort
+      : "created_at";
+
+  const sort: "created_at" | "full_name" | "status" =
+    sortParam === "full_name" || sortParam === "status"
+      ? sortParam
+      : "created_at";
+
+  const order: "asc" | "desc" =
+    resolvedParams.order === "asc" ? "asc" : "desc";
 
   const totalCount = await getStudentsCount()
 
@@ -57,7 +69,7 @@ export default async function StudentsPage({
         key={suspenseKey}
         fallback={<Skeleton className="rounded-3xl min-h-[250px] bg-slate-200 mt-6" />}
       >
-        <StudentsTable filters={filters} page={page} />
+        <StudentsTable filters={filters} page={page} sort={sort} order={order} />
       </Suspense>
     </div>
   );

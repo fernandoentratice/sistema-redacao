@@ -9,6 +9,8 @@ interface GetStudentsFiltersParams {
   filters?: GetStudentsFilters;
   page?: number;
   limit?: number;
+  sort?: "created_at" | "full_name" | "status";
+  order?: "asc" | "desc";
 }
 
 interface GetStudentEssaysFiltersParams {
@@ -22,6 +24,8 @@ export async function getStudents({
   filters,
   page = 1,
   limit = 10,
+  sort = "created_at",
+  order = "desc",
 }: GetStudentsFiltersParams = {}): Promise<{
   students: StudentsListItem[];
   totalPages: number;
@@ -32,7 +36,12 @@ export async function getStudents({
   const rangeStart = (page - 1) * limit;
   const rangeEnd = rangeStart + limit - 1;
 
-  let query = supabase.from("profiles").select("*", { count: "exact" }).eq("role", "STUDENT");
+  let query = supabase
+    .from("profiles")
+    .select("id, full_name, email, avatar_url, status, created_at", {
+      count: "exact",
+    })
+    .eq("role", "STUDENT");
 
   if (filters?.search) {
     query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
@@ -44,6 +53,7 @@ export async function getStudents({
 
   if (filters?.from || filters?.to) {
     const startRange = filters.from ? new Date(filters.from) : new Date();
+
     const endRange = new Date(filters.to || (filters.from as string));
 
     endRange.setUTCHours(23, 59, 59, 999);
@@ -53,19 +63,154 @@ export async function getStudents({
       .lte("created_at", endRange.toISOString());
   }
 
-  const { data, count, error } = await query
-    .range(rangeStart, rangeEnd)
-    .order("full_name", { ascending: true });
+  const allowedSortFields = ["created_at", "full_name", "status"] as const;
 
-  if (error) {
-    console.error("Erro ao buscar lista de alunos:", error);
-    return { students: [], totalPages: 0, error };
+  const sortField = allowedSortFields.includes(sort as (typeof allowedSortFields)[number])
+    ? sort
+    : "created_at";
+
+  const {
+    data: profiles,
+    count,
+    error: profilesError,
+  } = await query.order(sortField, { ascending: order === "asc" }).range(rangeStart, rangeEnd);
+
+  if (profilesError) {
+    console.error("Erro ao buscar lista de alunos:", profilesError);
+
+    return {
+      students: [],
+      totalPages: 0,
+      error: profilesError,
+    };
   }
 
+  if (!profiles?.length) {
+    return {
+      students: [],
+      totalPages: count ? Math.ceil(count / limit) : 0,
+      error: null,
+    };
+  }
+
+  const studentIds = profiles.map((student) => student.id);
+  const now = new Date().toISOString();
+
+  const [subscriptionsRes, creditsRes, mentorshipCreditsRes] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select(
+        `
+        user_id,
+        status,
+        current_period_start,
+        current_period_end,
+        plans!subscriptions_plan_id_fkey (
+        name,
+        interval,
+        interval_count
+        )
+      `
+      )
+      .in("user_id", studentIds),
+
+    supabase
+      .from("student_credits")
+      .select(
+        `
+        user_id,
+        plan_credits,
+        extra_credits,
+        free_credits
+      `
+      )
+      .in("user_id", studentIds),
+
+    supabase
+      .from("mentorship_credit_allocations")
+      .select(
+        `
+        user_id,
+        remaining_amount
+      `
+      )
+      .in("user_id", studentIds)
+      .eq("status", "active")
+      .lte("available_at", now)
+      .gt("expires_at", now),
+  ]);
+
+  const relatedError = subscriptionsRes.error || creditsRes.error || mentorshipCreditsRes.error;
+
+  if (relatedError) {
+    console.error("Erro ao buscar plano/créditos dos alunos:", relatedError);
+
+    return {
+      students: [],
+      totalPages: count ? Math.ceil(count / limit) : 0,
+      error: relatedError,
+    };
+  }
+
+  const subscriptionsByUser = new Map(
+    (subscriptionsRes.data ?? []).map((subscription) => [subscription.user_id, subscription])
+  );
+
+  const creditsByUser = new Map(
+    (creditsRes.data ?? []).map((credits) => [credits.user_id, credits])
+  );
+
+  const mentorshipCreditsByUser = new Map<string, number>();
+
+  for (const allocation of mentorshipCreditsRes.data ?? []) {
+    const current = mentorshipCreditsByUser.get(allocation.user_id) ?? 0;
+
+    mentorshipCreditsByUser.set(allocation.user_id, current + allocation.remaining_amount);
+  }
+
+  const students: StudentsListItem[] = profiles.map((profile) => {
+    const subscription = subscriptionsByUser.get(profile.id);
+    const credits = creditsByUser.get(profile.id);
+
+    const plan = Array.isArray(subscription?.plans) ? subscription.plans[0] : subscription?.plans;
+
+    return {
+      id: profile.id,
+      full_name: profile.full_name,
+      email: profile.email,
+      avatar_url: profile.avatar_url,
+      status: profile.status,
+      created_at: profile.created_at,
+
+      plan: plan
+        ? {
+            name: plan.name,
+            interval: plan.interval,
+            interval_count: plan.interval_count,
+          }
+        : null,
+
+      subscription: subscription
+        ? {
+            status: subscription.status,
+            current_period_start: subscription.current_period_start,
+            current_period_end: subscription.current_period_end,
+          }
+        : null,
+
+      credits: {
+        plan: credits?.plan_credits ?? 0,
+        extra: credits?.extra_credits ?? 0,
+        free: credits?.free_credits ?? 0,
+        mentorship: mentorshipCreditsByUser.get(profile.id) ?? 0,
+      },
+    };
+  });
+
   return {
-    students: data,
+    students,
     totalPages: count ? Math.ceil(count / limit) : 0,
-    error: error,
+    error: null,
   };
 }
 

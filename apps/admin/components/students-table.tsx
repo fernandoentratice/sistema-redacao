@@ -3,14 +3,20 @@ import { CircleAlert, FileText, Search } from "lucide-react";
 import { TablePagination } from "@repo/ui/components/table-pagination";
 import { StudentsTableRow } from "./students-table-row";
 import { StudentsFilter } from "@repo/types";
-
 interface StudentsTableProps {
   filters: StudentsFilter;
   page: number;
+  sort: "created_at" | "full_name" | "status";
+  order: "asc" | "desc";
 }
 
-export async function StudentsTable({ filters, page }: StudentsTableProps) {
-  const { students, totalPages, error } = await getStudents({ filters, page })
+export async function StudentsTable({ filters, page, sort, order }: StudentsTableProps) {
+  const { students, totalPages, error } = await getStudents({
+    filters,
+    page,
+    sort,
+    order,
+  });
 
   const searchTerm = filters?.search
 
@@ -33,11 +39,12 @@ export async function StudentsTable({ filters, page }: StudentsTableProps) {
       <>
         <div className="rounded-4xl border border-slate-200 overflow-hidden shadow-sm bg-white">
           <div className="hidden lg:grid grid-cols-12 gap-4 px-8 py-5 border-b border-slate-100 bg-slate-50/50">
-            <div className="col-span-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aluno</div>
-            <div className="col-span-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</div>
-            <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Plano Atual</div>
-            <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Créditos Disponíveis</div>
-            <div className="col-span-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vigência do Plano</div>
+            <div className="col-span-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aluno</div>
+            <div className="col-span-2 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Plano Atual</div>
+            <div className="col-span-2 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Créditos Disponíveis</div>
+            <div className="col-span-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cadastro</div>
+            <div className="col-span-2 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vigência</div>
+            <div className="col-span-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</div>
             <div className="col-span-1 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ações</div>
           </div>
 
