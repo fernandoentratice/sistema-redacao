@@ -177,6 +177,7 @@ export interface GradedEssayListItem {
 export interface StudentsFilter {
   search?: string;
   status?: string;
+  plan?: string;
   from?: string;
   to?: string;
 }

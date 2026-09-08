@@ -27,6 +27,11 @@ export type StudentsListItem = {
     free: number;
     mentorship: number;
   };
+
+  last_activity: {
+    date: string;
+    type: "submission" | "correction";
+  } | null;
 };
 
 export type GetStudentsFilters = {

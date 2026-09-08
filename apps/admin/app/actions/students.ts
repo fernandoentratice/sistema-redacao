@@ -20,6 +20,36 @@ interface GetStudentEssaysFiltersParams {
   limit?: number;
 }
 
+const FULL_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SHORT_UUID_PATTERN = /^[0-9a-f]{8}$/i;
+
+function getUuidPrefixRange(prefix: string) {
+  return {
+    start: `${prefix}-0000-0000-0000-000000000000`,
+    end: `${prefix}-ffff-ffff-ffff-ffffffffffff`,
+  };
+}
+
+function getPlanFilterLabel(name: string) {
+  return name.replace(/^Plano\s+/i, "");
+}
+
+export async function getStudentPlanFilterOptions(): Promise<{ label: string; value: string }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("plans").select("name").order("name");
+
+  if (error) {
+    console.error("Erro ao buscar opções de planos dos alunos:", error);
+    return [];
+  }
+
+  const uniquePlanNames = [...new Set((data ?? []).map((plan) => plan.name))];
+
+  return uniquePlanNames
+    .map((name) => ({ label: getPlanFilterLabel(name), value: name }))
+    .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+}
+
 export async function getStudents({
   filters,
   page = 1,
@@ -38,17 +68,76 @@ export async function getStudents({
 
   let query = supabase
     .from("profiles")
-    .select("id, full_name, email, avatar_url, status, created_at", {
-      count: "exact",
-    })
+    .select(
+      `
+        id,
+        full_name,
+        email,
+        avatar_url,
+        status,
+        created_at,
+        subscriptions!subscriptions_user_id_fkey (
+          status,
+          plan_id,
+          current_period_start,
+          current_period_end,
+          plans!subscriptions_plan_id_fkey (
+            name,
+            interval,
+            interval_count
+          )
+        )
+      `,
+      { count: "exact" }
+    )
     .eq("role", "STUDENT");
 
   if (filters?.search) {
-    query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+    const search = filters.search.trim();
+
+    if (FULL_UUID_PATTERN.test(search)) {
+      query = query.eq("id", search);
+    } else if (SHORT_UUID_PATTERN.test(search)) {
+      const { start, end } = getUuidPrefixRange(search.toLowerCase());
+      query = query.gte("id", start).lte("id", end);
+    } else {
+      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
   }
 
   if (filters?.status && filters.status !== "all") {
-    query = query.eq("status", filters.status);
+    if (filters.status === "blocked") {
+      query = query.eq("status", "blocked");
+    } else if (filters.status === "no_plan") {
+      query = query.neq("status", "blocked").is("subscriptions", null);
+    } else if (
+      filters.status === "plan_active" ||
+      filters.status === "past_due" ||
+      filters.status === "canceled"
+    ) {
+      const subscriptionStatuses =
+        filters.status === "plan_active"
+          ? ["active", "trial"]
+          : filters.status === "past_due"
+            ? ["past_due", "unpaid"]
+            : ["canceled"];
+
+      query = query
+        .neq("status", "blocked")
+        .in("subscriptions.status", subscriptionStatuses)
+        .not("subscriptions", "is", null);
+    }
+  }
+
+  if (filters?.plan && filters.plan !== "all") {
+    if (filters.status === "no_plan") {
+      return { students: [], totalPages: 0, error: null };
+    }
+
+    query = query
+      .eq("subscriptions.plans.name", filters.plan)
+      .not("subscriptions.plans", "is", null)
+      .not("subscriptions", "is", null);
   }
 
   if (filters?.from || filters?.to) {
@@ -96,24 +185,7 @@ export async function getStudents({
   const studentIds = profiles.map((student) => student.id);
   const now = new Date().toISOString();
 
-  const [subscriptionsRes, creditsRes, mentorshipCreditsRes] = await Promise.all([
-    supabase
-      .from("subscriptions")
-      .select(
-        `
-        user_id,
-        status,
-        current_period_start,
-        current_period_end,
-        plans!subscriptions_plan_id_fkey (
-        name,
-        interval,
-        interval_count
-        )
-      `
-      )
-      .in("user_id", studentIds),
-
+  const [creditsRes, mentorshipCreditsRes, activityRes] = await Promise.all([
     supabase
       .from("student_credits")
       .select(
@@ -138,12 +210,34 @@ export async function getStudents({
       .eq("status", "active")
       .lte("available_at", now)
       .gt("expires_at", now),
+
+    supabase
+      .from("profiles")
+      .select(
+        `
+          id,
+          latest_submission:essays!essays_student_id_fkey (
+            status,
+            submission_date
+          ),
+          latest_correction:essays!essays_student_id_fkey (
+            correction_date
+          )
+        `
+      )
+      .in("id", studentIds)
+      .in("latest_submission.status", ["pending", "correcting", "corrected", "returned"])
+      .order("submission_date", { referencedTable: "latest_submission", ascending: false })
+      .limit(1, { referencedTable: "latest_submission" })
+      .not("latest_correction.correction_date", "is", null)
+      .order("correction_date", { referencedTable: "latest_correction", ascending: false })
+      .limit(1, { referencedTable: "latest_correction" }),
   ]);
 
-  const relatedError = subscriptionsRes.error || creditsRes.error || mentorshipCreditsRes.error;
+  const relatedError = creditsRes.error || mentorshipCreditsRes.error || activityRes.error;
 
   if (relatedError) {
-    console.error("Erro ao buscar plano/créditos dos alunos:", relatedError);
+    console.error("Erro ao buscar dados complementares dos alunos:", relatedError);
 
     return {
       students: [],
@@ -151,10 +245,6 @@ export async function getStudents({
       error: relatedError,
     };
   }
-
-  const subscriptionsByUser = new Map(
-    (subscriptionsRes.data ?? []).map((subscription) => [subscription.user_id, subscription])
-  );
 
   const creditsByUser = new Map(
     (creditsRes.data ?? []).map((credits) => [credits.user_id, credits])
@@ -168,8 +258,32 @@ export async function getStudents({
     mentorshipCreditsByUser.set(allocation.user_id, current + allocation.remaining_amount);
   }
 
+  const activitiesByUser = new Map<string, StudentsListItem["last_activity"]>(
+    (activityRes.data ?? []).map((profile) => {
+      const latestSubmission = Array.isArray(profile.latest_submission)
+        ? profile.latest_submission[0]
+        : profile.latest_submission;
+      const latestCorrection = Array.isArray(profile.latest_correction)
+        ? profile.latest_correction[0]
+        : profile.latest_correction;
+      const submissionDate = latestSubmission?.submission_date ?? null;
+      const correctionDate = latestCorrection?.correction_date ?? null;
+
+      if (correctionDate && (!submissionDate || correctionDate > submissionDate)) {
+        return [profile.id, { date: correctionDate, type: "correction" as const }] as const;
+      }
+
+      return [
+        profile.id,
+        submissionDate ? { date: submissionDate, type: "submission" as const } : null,
+      ] as const;
+    })
+  );
+
   const students: StudentsListItem[] = profiles.map((profile) => {
-    const subscription = subscriptionsByUser.get(profile.id);
+    const subscription = Array.isArray(profile.subscriptions)
+      ? profile.subscriptions[0]
+      : profile.subscriptions;
     const credits = creditsByUser.get(profile.id);
 
     const plan = Array.isArray(subscription?.plans) ? subscription.plans[0] : subscription?.plans;
@@ -204,6 +318,8 @@ export async function getStudents({
         free: credits?.free_credits ?? 0,
         mentorship: mentorshipCreditsByUser.get(profile.id) ?? 0,
       },
+
+      last_activity: activitiesByUser.get(profile.id) ?? null,
     };
   });
 
