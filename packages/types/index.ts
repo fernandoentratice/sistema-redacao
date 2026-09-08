@@ -290,10 +290,16 @@ export interface StudentSubscription {
 export interface StudentCredits {
   free_credits: number;
   free_credit_expires_at: string | null;
-  plan_credits: number
-  extra_credits: number
-  total_credits: number
-  renew_date: string
+
+  plan_credits: number;
+
+  extra_credits: number;
+
+  mentorship_credits: number;
+  mentorship_credit_expires_at: string | null;
+
+  total_credits: number;
+  renew_date: string | null;
 }
 export interface StudentProfile {
   id: string;

@@ -348,16 +348,52 @@ export async function getStudentById(studentId: string) {
     };
   }
 
-  const [subscriptionRes, creditsRes] = await Promise.all([
+  const now = new Date().toISOString();
+
+  const [subscriptionRes, creditsRes, freeCreditsRes, mentorshipCreditsRes] = await Promise.all([
     supabase.from("subscriptions").select("*").eq("user_id", studentId).maybeSingle(),
+
     supabase.from("student_credits").select("*").eq("user_id", studentId).maybeSingle(),
+
+    supabase
+      .from("free_credit_allocations")
+      .select("remaining_amount, expires_at")
+      .eq("user_id", studentId)
+      .eq("status", "active")
+      .gt("remaining_amount", 0)
+      .gt("expires_at", now)
+      .order("expires_at", { ascending: true }),
+
+    supabase
+      .from("mentorship_credit_allocations")
+      .select("remaining_amount, expires_at")
+      .eq("user_id", studentId)
+      .eq("status", "active")
+      .lte("available_at", now)
+      .gt("expires_at", now)
+      .gt("remaining_amount", 0)
+      .order("expires_at", { ascending: true }),
   ]);
 
   const hasSubscriptionError = !!subscriptionRes.error;
-  const hasCreditsError = !!creditsRes.error;
+  const hasCreditsError =
+    !!creditsRes.error || !!freeCreditsRes.error || !!mentorshipCreditsRes.error;
 
   const subscription = subscriptionRes.data;
   const credits = creditsRes.data;
+  const freeCredits = (freeCreditsRes.data ?? []).reduce(
+    (total, allocation) => total + allocation.remaining_amount,
+    0
+  );
+
+  const freeCreditExpiresAt = freeCreditsRes.data?.[0]?.expires_at ?? null;
+
+  const mentorshipCredits = (mentorshipCreditsRes.data ?? []).reduce(
+    (total, allocation) => total + allocation.remaining_amount,
+    0
+  );
+
+  const mentorshipCreditExpiresAt = mentorshipCreditsRes.data?.[0]?.expires_at ?? null;
 
   if (hasSubscriptionError) {
     return {
@@ -370,7 +406,18 @@ export async function getStudentById(studentId: string) {
 
   if (!subscription) {
     return {
-      student: { ...profile, subscription: null, credits: credits || null },
+      student: {
+        ...profile,
+        subscription: null,
+        credits: credits
+          ? {
+              ...credits,
+              mentorship_credits: mentorshipCredits,
+              renew_date: null,
+              total_credits: 0,
+            }
+          : null,
+      },
       error: null,
       hasSubscriptionError: false,
       hasCreditsError,
@@ -407,6 +454,10 @@ export async function getStudentById(studentId: string) {
       credits: credits
         ? {
             ...credits,
+            free_credits: freeCredits,
+            free_credit_expires_at: freeCreditExpiresAt,
+            mentorship_credits: mentorshipCredits,
+            mentorship_credit_expires_at: mentorshipCreditExpiresAt,
             renew_date: subscription.current_period_end,
             total_credits: plan.credits_included,
           }

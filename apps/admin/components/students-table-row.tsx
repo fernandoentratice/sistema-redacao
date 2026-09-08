@@ -228,7 +228,7 @@ export function StudentsTableRow({ student }: { student: StudentsListItem }) {
               <p className="text-sm font-semibold text-slate-600 lg:text-xs xl:text-sm">
                 {formatDate(studentItem.last_activity.date, "compact")}
               </p>
-              <p className="mt-0.5 text-xs font-medium break-words text-slate-400 lg:text-[11px] xl:text-xs">
+              <p className="mt-0.5 text-xs font-medium wrap-break-word text-slate-400 lg:text-[11px] xl:text-xs">
                 {studentItem.last_activity.type === "submission"
                   ? "Enviou redação"
                   : "Recebeu correção"}
@@ -237,7 +237,7 @@ export function StudentsTableRow({ student }: { student: StudentsListItem }) {
           ) : (
             <>
               <p className="text-sm font-semibold text-slate-400 lg:text-xs xl:text-sm">—</p>
-              <p className="mt-0.5 text-xs font-medium break-words text-slate-400 lg:text-[11px] xl:text-xs">
+              <p className="mt-0.5 text-xs font-medium wrap-break-word text-slate-400 lg:text-[11px]">
                 Sem atividade registrada
               </p>
             </>
