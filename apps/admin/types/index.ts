@@ -7,15 +7,31 @@ export type StudentsListItem = {
   email: string;
   avatar_url: string | null;
   status: "active" | "inactive" | "blocked";
+  created_at: string;
 
-  // TODO: revisar quando integrar plano, créditos e vigência reais na listagem de alunos do admin
+  plan: {
+    name: string;
+    interval: string;
+    interval_count: number | null;
+  } | null;
 
-  plan?: string;
-  creditsProf?: number | string;
-  creditsIA?: number | string;
-  validityStart?: string;
-  validityEnd?: string;
-  validityType?: "EXPIRADO" | "MANUAL" | string;
+  subscription: {
+    status: string;
+    current_period_start: string | null;
+    current_period_end: string | null;
+  } | null;
+
+  credits: {
+    plan: number;
+    extra: number;
+    free: number;
+    mentorship: number;
+  };
+
+  last_activity: {
+    date: string;
+    type: "submission" | "correction";
+  } | null;
 };
 
 export type GetStudentsFilters = {

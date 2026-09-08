@@ -1,6 +1,5 @@
 "use server";
 
-import { UserData } from "@repo/types";
 import { createClient } from "@/lib/server";
 import { revalidatePath } from "next/cache";
 
@@ -15,16 +14,17 @@ export async function getProfileData() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url")
+    .select("id, full_name, avatar_url")
     .eq("id", user.id)
     .single();
 
   return {
     user: {
+      id: profile?.id ?? user.id,
       name: profile?.full_name || user.user_metadata?.full_name || "Professor",
-      email: user.email,
+      email: user.email ?? "",
       avatarUrl: profile?.avatar_url || null,
-    } as UserData,
+    },
   };
 }
 

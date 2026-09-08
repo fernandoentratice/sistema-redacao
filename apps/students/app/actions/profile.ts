@@ -27,7 +27,7 @@ export async function getProfileData() {
   const [profileRes, creditsRes, statsRes, evolutionRes, rankingRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select(`full_name, email, avatar_url, onboarding_completed`)
+      .select(`id, full_name, email, avatar_url, onboarding_completed`)
       .eq("id", user.id)
       .single(),
 
@@ -64,6 +64,7 @@ export async function getProfileData() {
 
   return {
     user: {
+      id: profile.id,
       name: profile.full_name,
       email: profile.email,
       avatarUrl: profile.avatar_url,
