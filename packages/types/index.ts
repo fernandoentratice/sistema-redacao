@@ -35,6 +35,7 @@ export type UserRole = "STUDENT" | "ADMIN" | "TEACHER";
 
 export type UserStatus = "active" | "inactive" | "blocked" | "pending";
 export interface UserData {
+  id: string;
   name: string;
   email: string;
   credits: number;
