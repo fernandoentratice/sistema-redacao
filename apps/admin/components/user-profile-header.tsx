@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from "react";
 import { Avatar } from "@repo/ui/components/avatar";
 import { Button } from "@repo/ui/components/button";
