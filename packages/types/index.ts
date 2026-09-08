@@ -35,6 +35,7 @@ export type UserRole = "STUDENT" | "ADMIN" | "TEACHER";
 
 export type UserStatus = "active" | "inactive" | "blocked" | "pending";
 export interface UserData {
+  id: string;
   name: string;
   email: string;
   credits: number;
@@ -177,6 +178,7 @@ export interface GradedEssayListItem {
 export interface StudentsFilter {
   search?: string;
   status?: string;
+  plan?: string;
   from?: string;
   to?: string;
 }
@@ -289,10 +291,16 @@ export interface StudentSubscription {
 export interface StudentCredits {
   free_credits: number;
   free_credit_expires_at: string | null;
-  plan_credits: number
-  extra_credits: number
-  total_credits: number
-  renew_date: string
+
+  plan_credits: number;
+
+  extra_credits: number;
+
+  mentorship_credits: number;
+  mentorship_credit_expires_at: string | null;
+
+  total_credits: number;
+  renew_date: string | null;
 }
 export interface StudentProfile {
   id: string;
