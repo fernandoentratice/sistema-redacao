@@ -9,6 +9,8 @@ import {
   evaluateExtraCreditOrder,
 } from "@/services/extra-credit-purchase/policy";
 import {
+  classifyPagarmeCardCreationError,
+  EXTRA_CREDIT_CARD_REJECTED_MESSAGE,
   getExtraCreditPaymentCardLifecycleAction,
   isDefinitivePagarmeHttpFailure,
 } from "@/services/payments/payment-card-policy";
@@ -35,10 +37,7 @@ import {
   PagarmeApiError,
 } from "@repo/payments";
 import type { CreditPackage, ExtraCreditPurchaseResult } from "@repo/types";
-import {
-  purchaseExtraCreditsSchema,
-  type PurchaseExtraCreditsInput,
-} from "@repo/validators";
+import { purchaseExtraCreditsSchema, type PurchaseExtraCreditsInput } from "@repo/validators";
 
 export async function getCreditPackages(): Promise<CreditPackage[]> {
   const supabase = await createClient();
@@ -358,21 +357,47 @@ export async function purchaseExtraCredits(
       }
 
       if (!paymentCard && parsedInput.data.paymentSource === "new_card") {
-        paymentCard = await createAndSavePaymentCard({
-          userId: user.id,
-          customerId: pagarmeCustomerId,
-          cardToken: parsedInput.data.cardToken,
-          billingAddress: buildPagarmeBillingAddress(parsedInput.data.billingAddress),
-          label: "Cartão salvo",
-          metadata: {
-            user_id: user.id,
-            extra_credit_package_id: packageItem.id,
-            source: "extra_credit_purchase",
-          },
-          idempotencyKey: references.cardIdempotencyKey,
-          makeDefault: false,
-          preserveExistingCardState: true,
-        });
+        try {
+          paymentCard = await createAndSavePaymentCard({
+            userId: user.id,
+            customerId: pagarmeCustomerId,
+            cardToken: parsedInput.data.cardToken,
+            billingAddress: buildPagarmeBillingAddress(parsedInput.data.billingAddress),
+            label: "Cartão salvo",
+            metadata: {
+              user_id: user.id,
+              extra_credit_package_id: packageItem.id,
+              source: "extra_credit_purchase",
+            },
+            idempotencyKey: references.cardIdempotencyKey,
+            makeDefault: false,
+            preserveExistingCardState: true,
+          });
+        } catch (error) {
+          const cardCreationDisposition = classifyPagarmeCardCreationError({
+            status: error instanceof PagarmeApiError ? error.status : null,
+            errorData: error instanceof PagarmeApiError ? error.errorData : undefined,
+          });
+
+          if (cardCreationDisposition === "failed" && error instanceof PagarmeApiError) {
+            await recordExtraCreditPreOrderFailure({
+              paymentId: reservation.id,
+              userId: user.id,
+              providerStatus: error.status,
+              failureSource: "card_creation",
+            });
+
+            return {
+              success: false,
+              paymentId: reservation.id,
+              status: "failed",
+              creditsAmount: packageItem.credits_amount,
+              message: EXTRA_CREDIT_CARD_REJECTED_MESSAGE,
+            };
+          }
+
+          throw error;
+        }
       }
 
       if (!paymentCard) {

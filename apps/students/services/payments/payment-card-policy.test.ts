@@ -1,11 +1,61 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  classifyPagarmeCardCreationError,
+  EXTRA_CREDIT_CARD_REJECTED_MESSAGE,
   getExtraCreditPaymentCardLifecycleAction,
   isDefinitiveCardPaymentFailureStatus,
   isDefinitivePagarmeHttpFailure,
   isCheckoutPaymentCardConfirmed,
 } from "./payment-card-policy.js";
+
+test("classifies a 412 card verification failure as terminal before order creation", () => {
+  assert.equal(
+    classifyPagarmeCardCreationError({
+      status: 412,
+      errorData: {
+        message: "Could not create credit card. The card verification failed.",
+      },
+    }),
+    "failed"
+  );
+  assert.equal(
+    EXTRA_CREDIT_CARD_REJECTED_MESSAGE,
+    "Não foi possível realizar o pagamento com este cartão. Verifique os dados informados ou tente outro cartão."
+  );
+});
+
+test("keeps ambiguous card creation errors processing", () => {
+  assert.equal(classifyPagarmeCardCreationError({ status: null }), "processing");
+  assert.equal(classifyPagarmeCardCreationError({ status: 408 }), "processing");
+  assert.equal(classifyPagarmeCardCreationError({ status: 409 }), "processing");
+  assert.equal(classifyPagarmeCardCreationError({ status: 429 }), "processing");
+  assert.equal(classifyPagarmeCardCreationError({ status: 500 }), "processing");
+});
+
+test("only closes explicit card validation 400 and 422 responses", () => {
+  assert.equal(
+    classifyPagarmeCardCreationError({
+      status: 400,
+      errorData: { message: "Invalid card token" },
+    }),
+    "failed"
+  );
+  assert.equal(
+    classifyPagarmeCardCreationError({
+      status: 422,
+      errorData: { message: "Card validation failed" },
+    }),
+    "failed"
+  );
+  assert.equal(
+    classifyPagarmeCardCreationError({
+      status: 400,
+      errorData: { message: "Unexpected request state" },
+    }),
+    "processing"
+  );
+});
 
 test("applies the new-card lifecycle without touching preexisting cards", () => {
   const scenarios = [

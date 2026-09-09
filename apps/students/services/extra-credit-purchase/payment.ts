@@ -195,10 +195,12 @@ export async function recordExtraCreditPreOrderFailure({
   paymentId,
   userId,
   providerStatus,
+  failureSource = "order_creation",
 }: {
   paymentId: string;
   userId: string;
   providerStatus: number;
+  failureSource?: "card_creation" | "order_creation";
 }) {
   const supabaseAdmin = createAdminClient();
   const { data: payment, error: paymentError } = await supabaseAdmin
@@ -227,6 +229,7 @@ export async function recordExtraCreditPreOrderFailure({
       metadata: {
         ...metadata,
         payment_failure_source: "pagarme_http_response",
+        payment_failure_stage: failureSource,
         pagarme_http_status: providerStatus,
         payment_failed_at: now,
       },
