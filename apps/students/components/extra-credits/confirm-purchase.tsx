@@ -29,6 +29,7 @@ import {
 } from "@/components/extra-credits/new-card-form";
 import { tokenizePagarmeCard } from "@/lib/checkout/tokenize-card";
 import { formatCurrency } from "@repo/utils";
+import { shouldRotateExtraCreditOperationId } from "@/services/extra-credit-purchase/policy";
 
 interface ConfirmPurchaseProps {
   packageData: CreditPackage;
@@ -121,6 +122,10 @@ export function ConfirmPurchase({
         });
 
         if (!result.success) {
+          if (shouldRotateExtraCreditOperationId(result)) {
+            setOperationId(crypto.randomUUID());
+          }
+
           setStep("confirm");
           setPurchaseMessage(
             result.message ??
@@ -165,6 +170,10 @@ export function ConfirmPurchase({
       });
 
       if (!result.success) {
+        if (shouldRotateExtraCreditOperationId(result)) {
+          setOperationId(crypto.randomUUID());
+        }
+
         setStep("confirm");
         setPurchaseMessage(
           result.message ??
@@ -173,6 +182,7 @@ export function ConfirmPurchase({
         return;
       }
 
+      setPurchaseStatus(result.status);
       setStep("success");
     } catch (error) {
       console.error("[EXTRA_CREDIT_PURCHASE_UI_ERROR]", error);

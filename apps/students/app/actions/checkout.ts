@@ -13,13 +13,22 @@ import type {
 } from "@/types";
 import {
   createPagarmeSubscription,
+  getPagarmeSubscription,
+  PagarmeApiError,
 } from "@repo/payments";
 import { getOrCreatePagarmeCustomerId } from "@/services/payments/pagarme-customer";
 import {
   createAndSavePaymentCard,
+  deactivatePaymentCardCreatedForOperation,
   listSavedPaymentCardsForUser,
   resolveSavedPaymentCard,
+  setPaymentCardAsDefaultAtomically,
 } from "@/services/payments/payment-cards";
+import {
+  isCheckoutPaymentCardConfirmed,
+  isDefinitiveCardPaymentFailureStatus,
+  isDefinitivePagarmeHttpFailure,
+} from "@/services/payments/payment-card-policy";
 import {
   buildPagarmeBillingAddress,
   buildSubscriptionCode,
@@ -400,6 +409,7 @@ export async function createCheckoutSubscription(
 
   let savedCardId: string | null = selectedCard?.localCardId ?? null;
   let pagarmeCardId: string | undefined = selectedCard?.pagarmeCardId;
+  let paymentCardCreatedForOperation = false;
 
   if (isCardPayment && cardToken) {
     const savedCard = await createAndSavePaymentCard({
@@ -413,36 +423,57 @@ export async function createCheckoutSubscription(
         plan_id: plan.id,
         source: "students_checkout",
       },
+      makeDefault: false,
+      preserveExistingCardState: true,
     });
 
     savedCardId = savedCard.localCardId;
     pagarmeCardId = savedCard.pagarmeCardId;
+    paymentCardCreatedForOperation = savedCard.createdLocally;
   }
 
   const subscriptionCode = buildSubscriptionCode(user.id);
 
-  const pagarmeSubscription = await createPagarmeSubscription({
-    code: subscriptionCode,
-    planId: pagarmePlanId,
-    customerId: pagarmeCustomerId,
-    paymentMethod: input.paymentMethod,
-    billingAddress,
-    cardId: pagarmeCardId,
-    boletoDueDays: 3,
-    metadata: {
-      user_id: user.id,
-      plan_id: plan.id,
-      local_subscription_code: subscriptionCode,
-      source: "students_checkout",
-      checkout_operation: checkoutOperation,
+  let pagarmeSubscription: Awaited<ReturnType<typeof createPagarmeSubscription>>;
 
-      ...(checkoutAccess.previousSubscriptionExternalId
-        ? {
-            previous_subscription_external_id: checkoutAccess.previousSubscriptionExternalId,
-          }
-        : {}),
-    },
-  });
+  try {
+    pagarmeSubscription = await createPagarmeSubscription({
+      code: subscriptionCode,
+      planId: pagarmePlanId,
+      customerId: pagarmeCustomerId,
+      paymentMethod: input.paymentMethod,
+      billingAddress,
+      cardId: pagarmeCardId,
+      boletoDueDays: 3,
+      metadata: {
+        user_id: user.id,
+        plan_id: plan.id,
+        local_subscription_code: subscriptionCode,
+        source: "students_checkout",
+        checkout_operation: checkoutOperation,
+
+        ...(checkoutAccess.previousSubscriptionExternalId
+          ? {
+              previous_subscription_external_id: checkoutAccess.previousSubscriptionExternalId,
+            }
+          : {}),
+      },
+    });
+  } catch (error) {
+    if (
+      error instanceof PagarmeApiError &&
+      isDefinitivePagarmeHttpFailure(error.status) &&
+      savedCardId &&
+      paymentCardCreatedForOperation
+    ) {
+      await deactivatePaymentCardCreatedForOperation({
+        userId: user.id,
+        paymentCardId: savedCardId,
+      });
+    }
+
+    throw error;
+  }
 
   if (!pagarmeSubscription.id) {
     throw new Error("A Pagar.me não retornou uma assinatura válida.");
@@ -475,6 +506,10 @@ export async function createCheckoutSubscription(
         pagarme_status: pagarmeSubscription.status,
         local_subscription_code: subscriptionCode,
         failure_reason: "card_payment_failed",
+        payment_card_created_for_operation: paymentCardCreatedForOperation,
+        payment_card_promotion_pending: !isDefinitiveCardPaymentFailureStatus(
+          pagarmeSubscription.status
+        ),
         checkout_operation: checkoutOperation,
         previous_subscription_external_id: checkoutAccess.previousSubscriptionExternalId,
       },
@@ -482,6 +517,17 @@ export async function createCheckoutSubscription(
 
     if (failedPaymentError) {
       throw new Error("Não foi possível registrar a tentativa de pagamento.");
+    }
+
+    if (
+      savedCardId &&
+      paymentCardCreatedForOperation &&
+      isDefinitiveCardPaymentFailureStatus(pagarmeSubscription.status)
+    ) {
+      await deactivatePaymentCardCreatedForOperation({
+        userId: user.id,
+        paymentCardId: savedCardId,
+      });
     }
 
     throw new Error("Pagamento não autorizado. Confira os dados do cartão ou tente outro cartão.");
@@ -544,6 +590,30 @@ export async function createCheckoutSubscription(
     console.error("[FINALIZE_CHECKOUT_SUBSCRIPTION_ERROR]", finalizationError);
 
     throw new Error("Não foi possível concluir a assinatura no sistema.");
+  }
+
+  if (isCardPayment && cardToken && savedCardId && pagarmeCardId) {
+    const confirmedSubscription = await getPagarmeSubscription({
+      subscriptionId: pagarmeSubscription.id,
+    });
+
+    if (
+      !isCheckoutPaymentCardConfirmed({
+        expectedSubscriptionId: pagarmeSubscription.id,
+        actualSubscriptionId: confirmedSubscription.id,
+        subscriptionStatus: confirmedSubscription.status,
+        expectedCardId: pagarmeCardId,
+        actualCardId: confirmedSubscription.card?.id,
+      })
+    ) {
+      throw new Error("A Pagar.me não confirmou o cartão aprovado da assinatura.");
+    }
+
+    await setPaymentCardAsDefaultAtomically({
+      userId: user.id,
+      paymentCardId: savedCardId,
+      expectedSubscriptionId: finalization.subscription_id,
+    });
   }
 
   if (!finalization.duplicate) {

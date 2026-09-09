@@ -1,4 +1,8 @@
-import { getCreditPackages, getSavedPaymentCards } from "@/app/actions/credits";
+import {
+  canPurchaseExtraCredits,
+  getCreditPackages,
+  getSavedPaymentCards,
+} from "@/app/actions/credits";
 import { PricingCard } from "@/components/extra-credits/pricing-card";
 import { PurchaseCallout } from "@/components/extra-credits/purchase-callout";
 import { Button } from "@repo/ui/components/button";
@@ -11,6 +15,49 @@ export const metadata: Metadata = {
 };
 
 export default async function BuyCreditsPage() {
+  const eligibility = await canPurchaseExtraCredits();
+
+  if (!eligibility.eligible) {
+    const shouldOfferPaidPlans = [
+      "NO_SUBSCRIPTION",
+      "LOCAL_SUBSCRIPTION_NOT_ACTIVE",
+      "PLAN_NOT_PAID",
+      "INTERNAL_PLAN",
+      "NO_REMOTE_SUBSCRIPTION",
+    ].includes(eligibility.reason ?? "");
+
+    return (
+      <div className="min-h-dvh px-4 py-6 md:px-10 lg:px-12">
+        <div className="mx-auto max-w-3xl">
+          <Button asChild variant="ghost" className="text-slate-500 hover:bg-transparent! hover:text-primary">
+            <Link href="/assinatura">
+              <ArrowLeft className="mr-2 size-4" />
+              Voltar
+            </Link>
+          </Button>
+
+          <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-10 text-center">
+            <h1 className="text-2xl font-extrabold text-foreground">
+              {shouldOfferPaidPlans
+                ? "Créditos extras exigem uma assinatura paga ativa"
+                : "Não foi possível confirmar sua assinatura"}
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm font-medium text-foreground/60">
+              {shouldOfferPaidPlans
+                ? "Assine um dos planos disponíveis para comprar créditos adicionais."
+                : "Tente novamente em alguns instantes ou verifique a situação da sua assinatura."}
+            </p>
+            {shouldOfferPaidPlans && (
+              <Button asChild className="mt-6">
+                <Link href="/assinatura/planos">Conhecer planos</Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const [packages, savedCards] = await Promise.all([
     getCreditPackages(),
     getSavedPaymentCards(),

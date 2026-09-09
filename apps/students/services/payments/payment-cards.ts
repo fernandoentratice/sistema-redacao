@@ -2,7 +2,13 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/admin";
 import type { SavedPaymentCard } from "@/types";
-import { createPagarmeCard, type PagarmeBillingAddress, type PagarmeCard } from "@repo/payments";
+import { isCheckoutPaymentCardConfirmed } from "@/services/payments/payment-card-policy";
+import {
+  createPagarmeCard,
+  getPagarmeSubscription,
+  type PagarmeBillingAddress,
+  type PagarmeCard,
+} from "@repo/payments";
 
 export async function listSavedPaymentCardsForUser({
   userId,
@@ -76,6 +82,7 @@ export async function resolveSavedPaymentCard({
   return {
     localCardId: card.id,
     pagarmeCardId: card.pagarme_card_id,
+    createdLocally: false,
   };
 }
 
@@ -88,6 +95,13 @@ interface CreateAndSavePaymentCardParams {
   metadata: Record<string, string>;
   idempotencyKey?: string;
   makeDefault?: boolean;
+  preserveExistingCardState?: boolean;
+}
+
+export interface SavedPaymentCardReference {
+  localCardId: string;
+  pagarmeCardId: string;
+  createdLocally: boolean;
 }
 
 function assertValidPagarmeCard(card: PagarmeCard) {
@@ -112,7 +126,8 @@ export async function createAndSavePaymentCard({
   metadata,
   idempotencyKey,
   makeDefault = true,
-}: CreateAndSavePaymentCardParams) {
+  preserveExistingCardState = false,
+}: CreateAndSavePaymentCardParams): Promise<SavedPaymentCardReference> {
   const pagarmeCard = await createPagarmeCard({
     customerId,
     cardToken,
@@ -169,6 +184,14 @@ export async function createAndSavePaymentCard({
   };
 
   if (existingCard) {
+    if (preserveExistingCardState) {
+      return {
+        localCardId: existingCard.id,
+        pagarmeCardId: pagarmeCard.id,
+        createdLocally: false,
+      };
+    }
+
     const { error: updateCardError } = await supabaseAdmin
       .from("student_payment_cards")
       .update({
@@ -185,6 +208,7 @@ export async function createAndSavePaymentCard({
     return {
       localCardId: existingCard.id,
       pagarmeCardId: pagarmeCard.id,
+      createdLocally: false,
     };
   }
 
@@ -200,10 +224,15 @@ export async function createAndSavePaymentCard({
     .single();
 
   if (savedCardError?.code === "23505") {
-    return resolveSavedPaymentCardByPagarmeId({
+    const concurrentCard = await resolveSavedPaymentCardByPagarmeId({
       userId,
       pagarmeCardId: pagarmeCard.id,
     });
+
+    return {
+      ...concurrentCard,
+      createdLocally: false,
+    };
   }
 
   if (savedCardError || !savedCard) {
@@ -213,7 +242,183 @@ export async function createAndSavePaymentCard({
   return {
     localCardId: savedCard.id,
     pagarmeCardId: pagarmeCard.id,
+    createdLocally: true,
   };
+}
+
+export async function reconcileInitialCheckoutPaymentCard({
+  subscriptionExternalId,
+  status,
+}: {
+  subscriptionExternalId: string;
+  status: "paid" | "failed";
+}) {
+  const supabaseAdmin = createAdminClient();
+  const { data: payment, error } = await supabaseAdmin
+    .from("student_payments")
+    .select("user_id, payment_card_id, metadata")
+    .eq("kind", "subscription")
+    .eq("provider", "pagarme")
+    .eq("external_id", subscriptionExternalId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[CHECKOUT_PAYMENT_CARD_RECONCILIATION_LOOKUP_ERROR]", error);
+    throw new Error("Não foi possível recuperar o cartão do checkout.");
+  }
+
+  if (!payment?.payment_card_id) {
+    return;
+  }
+
+  const metadata =
+    payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata)
+      ? payment.metadata
+      : {};
+
+  if (status === "paid") {
+    if (metadata.payment_card_promotion_pending !== true) {
+      return;
+    }
+
+    const card = await resolveSavedPaymentCard({
+      userId: payment.user_id,
+      paymentCardId: payment.payment_card_id,
+    });
+    const remoteSubscription = await getPagarmeSubscription({
+      subscriptionId: subscriptionExternalId,
+    });
+
+    if (
+      !isCheckoutPaymentCardConfirmed({
+        expectedSubscriptionId: subscriptionExternalId,
+        actualSubscriptionId: remoteSubscription.id,
+        subscriptionStatus: remoteSubscription.status,
+        expectedCardId: card.pagarmeCardId,
+        actualCardId: remoteSubscription.card?.id,
+      })
+    ) {
+      throw new Error("A Pagar.me não confirmou o cartão aprovado da assinatura.");
+    }
+
+    const { data: subscription, error: subscriptionError } = await supabaseAdmin
+      .from("subscriptions")
+      .select("id")
+      .eq("external_id", subscriptionExternalId)
+      .eq("user_id", payment.user_id)
+      .in("status", ["active", "trial"])
+      .maybeSingle();
+
+    if (subscriptionError) {
+      console.error("[CHECKOUT_PAYMENT_CARD_SUBSCRIPTION_LOOKUP_ERROR]", subscriptionError);
+      throw new Error("Não foi possível confirmar a assinatura local do cartão aprovado.");
+    }
+
+    if (!subscription) {
+      return;
+    }
+
+    await setPaymentCardAsDefaultAtomically({
+      userId: payment.user_id,
+      paymentCardId: payment.payment_card_id,
+      expectedSubscriptionId: subscription.id,
+    });
+    return;
+  }
+
+  if (metadata.payment_card_created_for_operation === true) {
+    await deactivatePaymentCardCreatedForOperation({
+      userId: payment.user_id,
+      paymentCardId: payment.payment_card_id,
+    });
+  }
+}
+
+export async function setPaymentCardAsDefaultAtomically({
+  userId,
+  paymentCardId,
+  expectedSubscriptionId,
+}: {
+  userId: string;
+  paymentCardId: string;
+  expectedSubscriptionId: string | null;
+}) {
+  const supabaseAdmin = createAdminClient();
+  const now = new Date().toISOString();
+  const { data: card, error: activateCardError } = await supabaseAdmin
+    .from("student_payment_cards")
+    .update({
+      is_active: true,
+      deleted_at: null,
+      updated_at: now,
+    })
+    .eq("id", paymentCardId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (activateCardError || !card) {
+    console.error("[PAYMENT_CARD_ACTIVATION_ERROR]", activateCardError);
+    throw new Error("Não foi possível ativar o cartão aprovado.");
+  }
+
+  const { error: promoteCardError } = await supabaseAdmin.rpc(
+    "set_student_default_payment_card",
+    {
+      p_user_id: userId,
+      p_payment_card_id: paymentCardId,
+      p_expected_subscription_id: expectedSubscriptionId,
+    }
+  );
+
+  if (promoteCardError) {
+    console.error("[PAYMENT_CARD_ATOMIC_PROMOTION_ERROR]", promoteCardError);
+    throw new Error("Não foi possível definir o cartão aprovado como padrão.");
+  }
+}
+
+export async function deactivatePaymentCardCreatedForOperation({
+  userId,
+  paymentCardId,
+}: {
+  userId: string;
+  paymentCardId: string;
+}) {
+  const supabaseAdmin = createAdminClient();
+  const { data: activeSubscription, error: subscriptionError } = await supabaseAdmin
+    .from("subscriptions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("payment_card_id", paymentCardId)
+    .in("status", ["active", "trial"])
+    .maybeSingle();
+
+  if (subscriptionError) {
+    console.error("[PAYMENT_CARD_CLEANUP_SUBSCRIPTION_ERROR]", subscriptionError);
+    throw new Error("Não foi possível validar o uso atual do cartão recusado.");
+  }
+
+  if (activeSubscription) {
+    throw new Error("Um cartão vinculado a uma assinatura ativa não pode ser desativado.");
+  }
+
+  const { error: cleanupError } = await supabaseAdmin
+    .from("student_payment_cards")
+    .update({
+      is_default: false,
+      is_active: false,
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", paymentCardId)
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .is("deleted_at", null);
+
+  if (cleanupError) {
+    console.error("[PAYMENT_CARD_CLEANUP_ERROR]", cleanupError);
+    throw new Error("Não foi possível remover o cartão recusado.");
+  }
 }
 
 export async function resolveSavedPaymentCardByPagarmeId({
@@ -240,5 +445,6 @@ export async function resolveSavedPaymentCardByPagarmeId({
   return {
     localCardId: card.id,
     pagarmeCardId,
+    createdLocally: false,
   };
 }

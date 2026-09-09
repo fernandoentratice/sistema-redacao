@@ -5,16 +5,23 @@ import { createClient } from "@/lib/server";
 import {
   buildExtraCreditPurchaseMetadata,
   buildExtraCreditPurchaseReferences,
+  evaluateExtraCreditEligibility,
   evaluateExtraCreditOrder,
 } from "@/services/extra-credit-purchase/policy";
 import {
+  getExtraCreditPaymentCardLifecycleAction,
+  isDefinitivePagarmeHttpFailure,
+} from "@/services/payments/payment-card-policy";
+import {
   attachPaymentCardToExtraCreditPurchase,
+  recordExtraCreditPreOrderFailure,
   recordExtraCreditOrderResult,
   reserveExtraCreditPurchase,
 } from "@/services/extra-credit-purchase/payment";
 import { getOrCreatePagarmeCustomerId } from "@/services/payments/pagarme-customer";
 import {
   createAndSavePaymentCard,
+  deactivatePaymentCardCreatedForOperation,
   listSavedPaymentCardsForUser,
   resolveSavedPaymentCard,
 } from "@/services/payments/payment-cards";
@@ -25,6 +32,7 @@ import {
   createPagarmeOrder,
   findPagarmeOrderByCode,
   getPagarmeSubscription,
+  PagarmeApiError,
 } from "@repo/payments";
 import type { CreditPackage, ExtraCreditPurchaseResult } from "@repo/types";
 import {
@@ -120,9 +128,10 @@ export async function canPurchaseExtraCredits() {
     };
   }
 
-  const { data: subscription, error } = await supabase
+  const supabaseAdmin = createAdminClient();
+  const { data: subscription, error } = await supabaseAdmin
     .from("subscriptions")
-    .select("id, external_id")
+    .select("id, plan_id, status, external_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -142,11 +151,41 @@ export async function canPurchaseExtraCredits() {
     };
   }
 
-  if (!subscription.external_id || !subscription.external_id.startsWith("sub_")) {
+  const { data: plan, error: planError } = await supabaseAdmin
+    .from("plans")
+    .select("external_id, price")
+    .eq("id", subscription.plan_id)
+    .maybeSingle();
+
+  if (planError) {
+    console.error("[EXTRA_CREDITS_PLAN_LOOKUP_ERROR]", planError);
+
     return {
       eligible: false,
-      reason: "NO_PAID_SUBSCRIPTION" as const,
+      reason: "PLAN_LOOKUP_FAILED" as const,
     };
+  }
+
+  if (!plan) {
+    return {
+      eligible: false,
+      reason: "PLAN_NOT_PAID" as const,
+    };
+  }
+
+  const localEligibility = evaluateExtraCreditEligibility({
+    subscription: {
+      status: subscription.status,
+      externalId: subscription.external_id,
+    },
+    plan: {
+      externalId: plan.external_id,
+      price: plan.price,
+    },
+  });
+
+  if (!localEligibility.eligible) {
+    return localEligibility;
   }
 
   try {
@@ -154,10 +193,22 @@ export async function canPurchaseExtraCredits() {
       subscriptionId: subscription.external_id,
     });
 
-    if (pagarmeSubscription.status !== "active") {
+    const eligibility = evaluateExtraCreditEligibility({
+      subscription: {
+        status: subscription.status,
+        externalId: subscription.external_id,
+      },
+      plan: {
+        externalId: plan.external_id,
+        price: plan.price,
+      },
+      remoteStatus: pagarmeSubscription.status,
+    });
+
+    if (!eligibility.eligible) {
       return {
         eligible: false,
-        reason: "SUBSCRIPTION_NOT_ACTIVE" as const,
+        reason: eligibility.reason,
       };
     }
 
@@ -172,7 +223,17 @@ export async function canPurchaseExtraCredits() {
 
     return {
       eligible: false,
-      reason: "PAGARME_UNAVAILABLE" as const,
+      reason: evaluateExtraCreditEligibility({
+        subscription: {
+          status: subscription.status,
+          externalId: subscription.external_id,
+        },
+        plan: {
+          externalId: plan.external_id,
+          price: plan.price,
+        },
+        remoteLookupFailed: true,
+      }).reason,
     };
   }
 }
@@ -277,6 +338,7 @@ export async function purchaseExtraCredits(
       orderCode: references.orderCode,
       idempotencyKey: references.idempotencyKey,
     });
+    let currentReservation = reservation;
 
     paymentId = reservation.id;
 
@@ -308,6 +370,8 @@ export async function purchaseExtraCredits(
             source: "extra_credit_purchase",
           },
           idempotencyKey: references.cardIdempotencyKey,
+          makeDefault: false,
+          preserveExistingCardState: true,
         });
       }
 
@@ -315,22 +379,55 @@ export async function purchaseExtraCredits(
         throw new Error("Não foi possível resolver o cartão da compra.");
       }
 
-      await attachPaymentCardToExtraCreditPurchase({
+      const attachedPayment = await attachPaymentCardToExtraCreditPurchase({
         paymentId: reservation.id,
         userId: user.id,
         paymentCardId: paymentCard.localCardId,
+        createdForOperation: paymentCard.createdLocally,
       });
+      currentReservation = {
+        ...currentReservation,
+        payment_card_id: attachedPayment.payment_card_id,
+        metadata: attachedPayment.metadata as Record<string, unknown> | null,
+      };
 
-      order = await createPagarmeOrder({
-        code: references.orderCode,
-        customerId: pagarmeCustomerId,
-        cardId: paymentCard.pagarmeCardId,
-        amount: packageItem.price_cents,
-        itemCode: `extra-credit-${packageItem.id.replaceAll("-", "")}`,
-        itemDescription: packageItem.name.slice(0, 255),
-        metadata: orderMetadata,
-        idempotencyKey: references.idempotencyKey,
-      });
+      try {
+        order = await createPagarmeOrder({
+          code: references.orderCode,
+          customerId: pagarmeCustomerId,
+          cardId: paymentCard.pagarmeCardId,
+          amount: packageItem.price_cents,
+          itemCode: `extra-credit-${packageItem.id.replaceAll("-", "")}`,
+          itemDescription: packageItem.name.slice(0, 255),
+          metadata: orderMetadata,
+          idempotencyKey: references.idempotencyKey,
+        });
+      } catch (error) {
+        if (error instanceof PagarmeApiError && isDefinitivePagarmeHttpFailure(error.status)) {
+          await recordExtraCreditPreOrderFailure({
+            paymentId: reservation.id,
+            userId: user.id,
+            providerStatus: error.status,
+          });
+
+          if (paymentCard.createdLocally) {
+            await deactivatePaymentCardCreatedForOperation({
+              userId: user.id,
+              paymentCardId: paymentCard.localCardId,
+            });
+          }
+
+          return {
+            success: false,
+            paymentId: reservation.id,
+            status: "failed",
+            creditsAmount: packageItem.credits_amount,
+            message: "Não foi possível aprovar a cobrança no cartão selecionado.",
+          };
+        }
+
+        throw error;
+      }
     }
 
     const decision = evaluateExtraCreditOrder({
@@ -340,19 +437,39 @@ export async function purchaseExtraCredits(
       expectedMetadata: orderMetadata,
     });
 
-    await recordExtraCreditOrderResult({
+    const recordedPayment = await recordExtraCreditOrderResult({
       paymentId: reservation.id,
       userId: user.id,
       orderId: order.id,
       orderStatus: order.status,
       decision,
     });
+    const finalLocalStatus =
+      recordedPayment.status === "paid" ||
+      recordedPayment.status === "pending" ||
+      recordedPayment.status === "failed"
+        ? recordedPayment.status
+        : decision.localStatus;
 
-    if (decision.localStatus === "paid" || decision.localStatus === "pending") {
+    if (parsedInput.data.paymentSource === "new_card") {
+      const paymentCardId = currentReservation.payment_card_id;
+      const createdLocally =
+        currentReservation.metadata?.payment_card_created_for_operation === true;
+      const lifecycleAction = getExtraCreditPaymentCardLifecycleAction({
+        createdLocally,
+        status: finalLocalStatus,
+      });
+
+      if (paymentCardId && lifecycleAction === "deactivate") {
+        await deactivatePaymentCardCreatedForOperation({ userId: user.id, paymentCardId });
+      }
+    }
+
+    if (finalLocalStatus === "paid" || finalLocalStatus === "pending") {
       return {
         success: true,
         paymentId: reservation.id,
-        status: decision.localStatus,
+        status: finalLocalStatus,
         creditsAmount: packageItem.credits_amount,
       };
     }
