@@ -447,7 +447,7 @@ export async function purchaseExtraCredits(
             paymentId: reservation.id,
             status: "failed",
             creditsAmount: packageItem.credits_amount,
-            message: "Não foi possível aprovar a cobrança no cartão selecionado.",
+            message: EXTRA_CREDIT_CARD_REJECTED_MESSAGE,
           };
         }
 
@@ -504,7 +504,7 @@ export async function purchaseExtraCredits(
       paymentId: reservation.id,
       status: "failed",
       creditsAmount: packageItem.credits_amount,
-      message: "Não foi possível aprovar a cobrança no cartão selecionado.",
+      message: EXTRA_CREDIT_CARD_REJECTED_MESSAGE,
     };
   } catch (error) {
     console.error("[EXTRA_CREDIT_PURCHASE_ERROR]", {
