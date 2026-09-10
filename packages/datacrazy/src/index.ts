@@ -52,6 +52,11 @@ export async function sendDataCrazyStudentPayload(
 
   let response: Response;
 
+  console.info("[DATACRAZY_DEBUG]", {
+    stage: "webhook_post_start",
+    event: payload.event,
+  });
+
   try {
     response = await fetch(webhookUrl.url, {
       method: "POST",
@@ -64,6 +69,13 @@ export async function sendDataCrazyStudentPayload(
   } catch {
     return { ok: false, errorCode: "WEBHOOK_REQUEST_FAILED" };
   }
+
+  console.info("[DATACRAZY_DEBUG]", {
+    stage: "webhook_post_response",
+    event: payload.event,
+    http_status: response.status,
+    success: response.ok,
+  });
 
   if (!response.ok) {
     return { ok: false, errorCode: "WEBHOOK_RESPONSE_FAILED" };

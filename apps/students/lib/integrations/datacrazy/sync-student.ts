@@ -156,6 +156,14 @@ export async function syncStudentToDataCrazy(userId: string, event: DataCrazyEve
 
     const essayStatus = ESSAY_STATUS_LABELS[essayResult.data.status];
 
+    console.info("[DATACRAZY_DEBUG]", {
+      stage: "essay_status_resolved",
+      user_id: userId,
+      event,
+      internal_status: essayResult.data.status,
+      mapped_status: essayStatus ?? null,
+    });
+
     if (!essayStatus) {
       throw new DataCrazySyncError("ESSAY_STATUS_NOT_MAPPED");
     }
