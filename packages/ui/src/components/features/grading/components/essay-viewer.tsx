@@ -3,8 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageSquareText, Trash2, X } from "lucide-react";
 import { HIGHLIGHT_STYLES } from "../../constants";
-import type { CorrectionHighlight } from "@repo/types";
+import type { CorrectionHighlight, MotivationalText } from "@repo/types";
 import { Button } from "@repo/ui/components/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@repo/ui/components/tabs";
 
 const COMP_BUTTONS = [
   { id: "c1", bg: "bg-comp-1" },
@@ -31,6 +37,8 @@ interface EssayViewerProps {
     id: string;
     title: string;
     content: string;
+    motivational_texts: MotivationalText[];
+    motivational_texts_load_error: boolean;
   };
   highlights: Highlight[];
   activeHighlightComp: string | null;
@@ -137,10 +145,10 @@ export function EssayViewer({
     setPopover((currentPopover) =>
       currentPopover
         ? {
-            ...currentPopover,
-            compId: compId.toLowerCase() as CorrectionHighlight["compId"],
-            comment: "",
-          }
+          ...currentPopover,
+          compId: compId.toLowerCase() as CorrectionHighlight["compId"],
+          comment: "",
+        }
         : null
     );
     onActiveHighlightChange(null);
@@ -262,6 +270,15 @@ export function EssayViewer({
     onActiveHighlightIdChange(null);
   };
 
+  const handleTabChange = (value: string) => {
+    if (value === "student-text") return;
+
+    window.getSelection()?.removeAllRanges();
+    setPopover(null);
+    onActiveHighlightChange(null);
+    onActiveHighlightIdChange(null);
+  };
+
   const renderContent = () => {
     const fullText = essay.content;
     const sortedHighlights = [...highlights].sort((a, b) => a.startIndex - b.startIndex);
@@ -287,11 +304,10 @@ export function EssayViewer({
           onClick={(e) => handleMarkClick(e, hl)}
           onKeyDown={(e) => handleMarkKeyDown(e, hl)}
           aria-pressed={activeHighlightId === hl.id}
-          className={`cursor-pointer rounded-sm pb-0.5 transition-all hover:opacity-80 ${HIGHLIGHT_STYLES[hl.compId as keyof typeof HIGHLIGHT_STYLES]} ${
-            activeHighlightId === hl.id
-              ? "ring-2 ring-slate-700/70 ring-offset-2"
-              : ""
-          }`}
+          className={`cursor-pointer rounded-sm pb-0.5 transition-all hover:opacity-80 ${HIGHLIGHT_STYLES[hl.compId as keyof typeof HIGHLIGHT_STYLES]} ${activeHighlightId === hl.id
+            ? "ring-2 ring-slate-700/70 ring-offset-2"
+            : ""
+            }`}
         >
           {fullText.slice(hl.startIndex, hl.endIndex)}
         </mark>
@@ -394,52 +410,122 @@ export function EssayViewer({
 
     return (
       <>
-      <span className="text-[10px] font-black uppercase tracking-widest opacity-50 mr-1 hidden sm:block">
-        Vincular
-      </span>
+        <span className="text-[10px] font-black uppercase tracking-widest opacity-50 mr-1 hidden sm:block">
+          Vincular
+        </span>
 
-      {COMP_BUTTONS.map((btn) => (
-        <button
-          type="button"
-          key={btn.id}
-          onClick={() => handleSelectCompetency(btn.id)}
-          className={`size-8 md:size-7 rounded-full text-[11px] md:text-[10px] font-black hover:scale-110 transition-transform ${btn.bg} text-white opacity-90 hover:opacity-100 shadow-md`}
-        >
-          {btn.id.toUpperCase()}
+        {COMP_BUTTONS.map((btn) => (
+          <button
+            type="button"
+            key={btn.id}
+            onClick={() => handleSelectCompetency(btn.id)}
+            className={`size-8 md:size-7 rounded-full text-[11px] md:text-[10px] font-black hover:scale-110 transition-transform ${btn.bg} text-white opacity-90 hover:opacity-100 shadow-md`}
+          >
+            {btn.id.toUpperCase()}
+          </button>
+        ))}
+
+        <div className="w-px h-5 md:h-4 bg-slate-700 mx-1 md:mx-2"></div>
+
+        <button type="button" onClick={handleClosePopover} className="p-2 md:p-1.5 text-slate-400 hover:bg-slate-700 rounded-lg transition-colors">
+          <X className="size-5 md:size-4" />
         </button>
-      ))}
-
-      <div className="w-px h-5 md:h-4 bg-slate-700 mx-1 md:mx-2"></div>
-
-      <button type="button" onClick={handleClosePopover} className="p-2 md:p-1.5 text-slate-400 hover:bg-slate-700 rounded-lg transition-colors">
-        <X className="size-5 md:size-4" />
-      </button>
       </>
     );
   };
 
   return (
     <div className="lg:col-span-7 bg-white rounded-4xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-fit relative">
-      <div className="px-6 py-4 md:px-8 md:py-6 border-b border-slate-100 uppercase tracking-widest text-[10px] font-bold text-slate-400">
-        Texto do Aluno
-      </div>
-
-      <div
-        className="p-4 md:p-10 overflow-y-auto min-h-[50vh]"
-        onMouseUp={handleSelectionEnd}
-        onTouchEnd={handleSelectionEnd}
+      <Tabs
+        defaultValue="student-text"
+        onValueChange={handleTabChange}
+        className="gap-0"
       >
-        <h2 className="text-lg md:text-2xl font-black mb-8 leading-tight text-center">
-          {essay.title}
-        </h2>
-
-        <div
-          ref={textRef}
-          className="text-justify text-base leading-relaxed text-slate-800 whitespace-pre-wrap wrap-break-word selection:bg-amber-200/50 md:text-lg"
+        <TabsList
+          variant="line"
+          className="h-auto w-full justify-start gap-6 rounded-none border-b border-slate-100 px-6 py-4 md:gap-8 md:px-8 md:py-6"
         >
-          {renderContent()}
-        </div>
-      </div>
+          <TabsTrigger
+            value="student-text"
+            className="h-auto flex-none rounded-none p-0 uppercase tracking-widest text-[10px] font-bold text-slate-400 data-[state=active]:text-slate-700 after:bg-primary"
+          >
+            Texto do aluno
+          </TabsTrigger>
+          <TabsTrigger
+            value="motivational-texts"
+            className="h-auto flex-none rounded-none p-0 uppercase tracking-widest text-[10px] font-bold text-slate-400 data-[state=active]:text-slate-700 after:bg-primary"
+          >
+            Textos motivadores
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="student-text">
+          <div
+            className="p-4 md:p-10 overflow-y-auto min-h-[50vh]"
+            onMouseUp={handleSelectionEnd}
+            onTouchEnd={handleSelectionEnd}
+          >
+            <h2 className="text-lg md:text-2xl font-black mb-8 leading-tight text-center">
+              {essay.title}
+            </h2>
+
+            <div
+              ref={textRef}
+              className="text-justify text-base leading-relaxed text-slate-800 whitespace-pre-wrap wrap-break-word selection:bg-amber-200/50 md:text-lg"
+            >
+              {renderContent()}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="motivational-texts">
+          <div className="min-h-[50vh] p-4 md:p-6">
+            {essay.motivational_texts_load_error ? (
+              <p className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-500">
+                Não foi possível carregar os textos motivadores.
+              </p>
+            ) : essay.motivational_texts.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-400">
+                Nenhum texto motivador disponível.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {essay.motivational_texts.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-left"
+                  >
+                    <h3 className="mb-3 w-fit rounded-md bg-[#EBC84C]/20 px-2 py-1 text-xs font-bold uppercase tracking-widest text-[#8B781F]">
+                      Motivador {index + 1}
+                    </h3>
+
+                    <div className="space-y-4">
+                      {item.body_text && (
+                        <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700 md:text-base">
+                          {item.body_text}
+                        </p>
+                      )}
+
+                      {item.image_url && (
+                        <img
+                          src={item.image_url}
+                          className="h-auto w-full rounded-lg border border-slate-200 bg-white object-contain"
+                        />
+                      )}
+
+                      {item.source_reference && (
+                        <p className="text-right text-[10px] font-medium italic text-slate-400">
+                          Fonte: {item.source_reference}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {popover && (
         <>
