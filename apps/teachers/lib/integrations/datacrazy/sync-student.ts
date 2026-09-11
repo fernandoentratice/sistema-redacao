@@ -1,4 +1,5 @@
 import {
+  buildDataCrazyTokensExpirationField,
   getDataCrazyEligibility,
   getDataCrazyPaymentStatus,
   sendDataCrazyStudentPayload,
@@ -170,9 +171,7 @@ export async function syncStudentToDataCrazy(
       event,
       lead,
       plan: planLabel,
-      ...(allocationResult.data?.expires_at
-        ? { tokens_expire_at: allocationResult.data.expires_at }
-        : {}),
+      ...buildDataCrazyTokensExpirationField(allocationResult.data?.expires_at),
     };
   } else if (event === "essay_status_updated") {
     const essayResult = await supabaseAdmin
