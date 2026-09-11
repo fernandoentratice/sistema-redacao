@@ -1,6 +1,6 @@
 import type { ExtraCreditPurchaseResult } from "@repo/types";
-import { shouldRotateExtraCreditOperationId } from "./policy.js";
-import { EXTRA_CREDIT_CARD_REJECTED_MESSAGE } from "../payments/payment-card-policy.js";
+import { shouldRotateExtraCreditOperationId } from "./policy";
+import { EXTRA_CREDIT_CARD_REJECTED_MESSAGE } from "../payments/payment-card-policy";
 
 export type ExtraCreditPaymentSource = "saved_card" | "new_card";
 type ExtraCreditPurchaseFailure = Extract<ExtraCreditPurchaseResult, { success: false }>;
