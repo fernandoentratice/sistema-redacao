@@ -1,8 +1,82 @@
 import type { PagarmeOrder } from "@repo/payments";
-import type { ExtraCreditPurchaseStatus } from "@repo/types";
+import type { ExtraCreditPurchaseResult, ExtraCreditPurchaseStatus } from "@repo/types";
 
 const PENDING_STATUSES = new Set(["pending", "processing"]);
 const FAILED_STATUSES = new Set(["failed", "canceled", "cancelled", "not_authorized", "refused"]);
+
+const INTERNAL_PLAN_EXTERNAL_IDS = new Set([
+  "internal_free_trial",
+  "internal_mentoria_free",
+]);
+
+export type ExtraCreditEligibilityReason =
+  | "NO_SUBSCRIPTION"
+  | "LOCAL_SUBSCRIPTION_NOT_ACTIVE"
+  | "PLAN_NOT_PAID"
+  | "INTERNAL_PLAN"
+  | "NO_REMOTE_SUBSCRIPTION"
+  | "REMOTE_SUBSCRIPTION_NOT_ACTIVE"
+  | "PAGARME_UNAVAILABLE";
+
+export interface ExtraCreditEligibilityInput {
+  subscription: {
+    status: string;
+    externalId: string | null;
+  } | null;
+  plan: {
+    externalId: string | null;
+    price: number;
+  } | null;
+  remoteStatus?: string | null;
+  remoteLookupFailed?: boolean;
+}
+
+export function evaluateExtraCreditEligibility({
+  subscription,
+  plan,
+  remoteStatus,
+  remoteLookupFailed = false,
+}: ExtraCreditEligibilityInput):
+  | { eligible: true; reason: null }
+  | { eligible: false; reason: ExtraCreditEligibilityReason } {
+  if (!subscription) {
+    return { eligible: false, reason: "NO_SUBSCRIPTION" };
+  }
+
+  if (subscription.status !== "active") {
+    return { eligible: false, reason: "LOCAL_SUBSCRIPTION_NOT_ACTIVE" };
+  }
+
+  if (!plan || !Number.isFinite(plan.price) || plan.price <= 0) {
+    return { eligible: false, reason: "PLAN_NOT_PAID" };
+  }
+
+  if (!plan.externalId || INTERNAL_PLAN_EXTERNAL_IDS.has(plan.externalId)) {
+    return { eligible: false, reason: "INTERNAL_PLAN" };
+  }
+
+  if (!subscription.externalId || !/^sub_[A-Za-z0-9]+$/.test(subscription.externalId)) {
+    return { eligible: false, reason: "NO_REMOTE_SUBSCRIPTION" };
+  }
+
+  if (remoteLookupFailed) {
+    return { eligible: false, reason: "PAGARME_UNAVAILABLE" };
+  }
+
+  if (remoteStatus === undefined) {
+    return { eligible: true, reason: null };
+  }
+
+  if (remoteStatus !== "active") {
+    return { eligible: false, reason: "REMOTE_SUBSCRIPTION_NOT_ACTIVE" };
+  }
+
+  return { eligible: true, reason: null };
+}
+
+export function shouldRotateExtraCreditOperationId(result: ExtraCreditPurchaseResult) {
+  return !result.success && result.status === "failed";
+}
 
 export function buildExtraCreditPurchaseReferences(operationId: string) {
   const compactOperationId = operationId.replaceAll("-", "");

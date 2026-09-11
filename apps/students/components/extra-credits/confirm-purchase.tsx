@@ -9,67 +9,54 @@ import {
   DialogTrigger,
 } from "@repo/ui/components/dialog";
 import { Button } from "@repo/ui/components/button";
-import {
-  CheckCircle2,
-  Info,
-  Loader2,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle2, Info, Loader2 } from "lucide-react";
 import type { CreditPackage } from "@repo/types";
-import {
-  purchaseExtraCredits,
-  type SavedPaymentCard,
-} from "@/app/actions/credits";
+import { purchaseExtraCredits, type SavedPaymentCard } from "@/app/actions/credits";
 import {
   PaymentMethodSelector,
   type ExtraCreditsPaymentSelection,
 } from "@/components/extra-credits/payment-method-selector";
-import {
-  NewCardForm,
-  type NewCardFormRef,
-} from "@/components/extra-credits/new-card-form";
-import { tokenizePagarmeCard } from "@/lib/checkout/tokenize-card";
+import { NewCardForm, type NewCardFormRef } from "@/components/extra-credits/new-card-form";
+import { PagarmeTokenizationError, tokenizePagarmeCard } from "@/lib/checkout/tokenize-card";
 import { formatCurrency } from "@repo/utils";
+import { shouldRotateExtraCreditOperationId } from "@/services/extra-credit-purchase/policy";
+import {
+  getExtraCreditFailureUi,
+  getExtraCreditPaymentView,
+} from "@/services/extra-credit-purchase/ui-policy";
 
 interface ConfirmPurchaseProps {
   packageData: CreditPackage;
   savedCards: SavedPaymentCard[];
 }
 
-export function ConfirmPurchase({
-  packageData,
-  savedCards,
-}: ConfirmPurchaseProps) {
+export function ConfirmPurchase({ packageData, savedCards }: ConfirmPurchaseProps) {
   const newCardFormRef = useRef<NewCardFormRef>(null);
 
-  const defaultCard =
-    savedCards.find((card) => card.isDefault) ?? savedCards[0];
+  const defaultCard = savedCards.find((card) => card.isDefault) ?? savedCards[0];
 
   const [open, setOpen] = useState(false);
 
-  const [step, setStep] = useState<
-    "confirm" | "processing" | "success"
-  >("confirm");
+  const [step, setStep] = useState<"confirm" | "processing" | "success">("confirm");
 
   const [operationId, setOperationId] = useState<string | null>(null);
 
-  const [purchaseMessage, setPurchaseMessage] =
-    useState<string | null>(null);
+  const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
 
-  const [purchaseStatus, setPurchaseStatus] = useState<
-    "paid" | "pending" | null
-  >(null);
+  const [purchaseStatus, setPurchaseStatus] = useState<"paid" | "pending" | null>(null);
 
-  const [paymentSelection, setPaymentSelection] =
-    useState<ExtraCreditsPaymentSelection>(
-      defaultCard
-        ? {
+  const [paymentSelection, setPaymentSelection] = useState<ExtraCreditsPaymentSelection>(
+    defaultCard
+      ? {
           type: "saved_card",
           paymentCardId: defaultCard.id,
         }
-        : {
+      : {
           type: "new_card",
         }
-    );
+  );
+  const [lastSavedCardId, setLastSavedCardId] = useState<string | null>(defaultCard?.id ?? null);
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
@@ -81,23 +68,26 @@ export function ConfirmPurchase({
 
       setPurchaseStatus(null);
       setPurchaseMessage(null);
+      setCardError(null);
       return;
     }
 
     window.setTimeout(() => {
       setStep("confirm");
       setPurchaseMessage(null);
+      setCardError(null);
       setOperationId(null);
+      setLastSavedCardId(defaultCard?.id ?? null);
 
       setPaymentSelection(
         defaultCard
           ? {
-            type: "saved_card",
-            paymentCardId: defaultCard.id,
-          }
+              type: "saved_card",
+              paymentCardId: defaultCard.id,
+            }
           : {
-            type: "new_card",
-          }
+              type: "new_card",
+            }
       );
     }, 300);
   };
@@ -121,11 +111,12 @@ export function ConfirmPurchase({
         });
 
         if (!result.success) {
+          if (shouldRotateExtraCreditOperationId(result)) {
+            setOperationId(crypto.randomUUID());
+          }
+
           setStep("confirm");
-          setPurchaseMessage(
-            result.message ??
-            "Não foi possível processar a compra."
-          );
+          setPurchaseMessage(result.message ?? "Não foi possível processar a compra.");
           return;
         }
 
@@ -165,67 +156,82 @@ export function ConfirmPurchase({
       });
 
       if (!result.success) {
+        const failureUi = getExtraCreditFailureUi({
+          paymentSource: "new_card",
+          result,
+        });
+
+        if (failureUi.rotateOperationId) {
+          setOperationId(crypto.randomUUID());
+        }
+
+        if (failureUi.clearCvv) {
+          newCardFormRef.current?.clearCvv();
+        }
+
         setStep("confirm");
-        setPurchaseMessage(
-          result.message ??
-          "Não foi possível processar a compra."
-        );
+        const message = result.message ?? "Não foi possível processar a compra.";
+
+        if (failureUi.errorPlacement === "payment") {
+          setCardError(message);
+          setPurchaseMessage(null);
+        } else {
+          setPurchaseMessage(message);
+        }
         return;
       }
 
+      setPurchaseStatus(result.status);
       setStep("success");
     } catch (error) {
       console.error("[EXTRA_CREDIT_PURCHASE_UI_ERROR]", error);
 
       setStep("confirm");
-      setPurchaseMessage(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível processar a compra."
-      );
+      if (error instanceof PagarmeTokenizationError) {
+        newCardFormRef.current?.clearCvv();
+        setCardError(
+          "Não foi possível validar os dados do cartão. Verifique as informações e tente novamente."
+        );
+        setPurchaseMessage(null);
+      } else {
+        setPurchaseMessage(
+          error instanceof Error ? error.message : "Não foi possível processar a compra."
+        );
+      }
     }
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={handleOpenChange}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="h-12 w-full rounded-xl text-base font-bold">
-          Comprar{" "}
-          {packageData.credits === 1
-            ? "crédito"
-            : "créditos"}
+          Comprar {packageData.credits === 1 ? "crédito" : "créditos"}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-h-[90vh] overflow-y-auto border-none p-0 shadow-2xl sm:max-w-[620px]">
-        {step === "confirm" && (
-          <div className="p-8">
+        {step !== "success" && (
+          <div className={step === "processing" ? "hidden" : "p-8"}>
             <DialogHeader className="mb-8">
               <DialogTitle className="text-2xl font-extrabold text-slate-800">
                 Confirmar Compra
               </DialogTitle>
 
               <p className="font-medium text-slate-500">
-                Confirme os detalhes da sua aquisição de
-                créditos.
+                Confirme os detalhes da sua aquisição de créditos.
               </p>
             </DialogHeader>
 
             <div className="space-y-6">
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                <h4 className="text-xs font-bold tracking-widest text-slate-400 uppercase">
                   Resumo da compra
                 </h4>
 
                 <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
                   <p className="font-bold text-slate-700">
                     {packageData.credits}{" "}
-                    {packageData.credits === 1
-                      ? "crédito extra"
-                      : "créditos extras"}
+                    {packageData.credits === 1 ? "crédito extra" : "créditos extras"}
                   </p>
 
                   <p className="shrink-0 text-lg font-extrabold text-slate-800">
@@ -234,36 +240,65 @@ export function ConfirmPurchase({
                 </div>
               </div>
 
-              <PaymentMethodSelector
-                cards={savedCards}
-                value={paymentSelection}
-                onChange={(selection) => {
-                  setPaymentSelection(selection);
-                  setPurchaseMessage(null);
-                }}
-              />
+              {getExtraCreditPaymentView(paymentSelection.type) === "new_card_form" ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                      Forma de pagamento
+                    </h4>
 
-              {paymentSelection.type === "new_card" ? (
-                <div className="border-t border-slate-100 pt-5">
-                  <NewCardForm ref={newCardFormRef} />
+                    {lastSavedCardId ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-xs font-bold text-slate-500"
+                        onClick={() => {
+                          setPaymentSelection({
+                            type: "saved_card",
+                            paymentCardId: lastSavedCardId,
+                          });
+                          setCardError(null);
+                          setPurchaseMessage(null);
+                        }}
+                      >
+                        <ArrowLeft className="mr-1 size-3.5" />
+                        Usar cartão salvo
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  <NewCardForm ref={newCardFormRef} compact cardError={cardError} />
                 </div>
-              ) : null}
+              ) : (
+                <PaymentMethodSelector
+                  cards={savedCards}
+                  value={paymentSelection}
+                  onChange={(selection) => {
+                    setPaymentSelection(selection);
+
+                    if (selection.type === "saved_card") {
+                      setLastSavedCardId(selection.paymentCardId);
+                    }
+
+                    setCardError(null);
+                    setPurchaseMessage(null);
+                  }}
+                />
+              )}
 
               {purchaseMessage ? (
-                <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-                  <p className="text-sm font-semibold text-destructive">
-                    {purchaseMessage}
-                  </p>
+                <div className="border-destructive/20 bg-destructive/5 rounded-xl border p-4">
+                  <p className="text-destructive text-sm font-semibold">{purchaseMessage}</p>
                 </div>
               ) : null}
 
               <div className="flex gap-3 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
                 <Info className="size-5 shrink-0 text-blue-500" />
 
-                <p className="text-xs font-semibold leading-relaxed text-blue-700/80">
-                  Ao confirmar, a cobrança será realizada no
-                  método de pagamento selecionado. Os créditos
-                  avulsos não possuem validade.
+                <p className="text-xs leading-relaxed font-semibold text-blue-700/80">
+                  Ao confirmar, a cobrança será realizada no método de pagamento selecionado. Os
+                  créditos avulsos não possuem validade.
                 </p>
               </div>
 
@@ -276,10 +311,7 @@ export function ConfirmPurchase({
                   Cancelar
                 </Button>
 
-                <Button
-                  onClick={handleConfirm}
-                  className="h-10 flex-1 rounded-xl font-bold"
-                >
+                <Button onClick={handleConfirm} className="h-10 flex-1 rounded-xl font-bold">
                   Confirmar Compra
                 </Button>
               </div>
@@ -291,48 +323,39 @@ export function ConfirmPurchase({
           <div className="flex flex-col items-center justify-center gap-4 p-16 text-center">
             <Loader2 className="size-12 animate-spin text-amber-500" />
 
-            <p className="font-bold text-slate-600">
-              Processando seu pagamento...
-            </p>
+            <p className="font-bold text-slate-600">Processando seu pagamento...</p>
 
-            <p className="text-sm font-medium text-slate-400">
-              Não feche esta janela.
-            </p>
+            <p className="text-sm font-medium text-slate-400">Não feche esta janela.</p>
           </div>
         )}
 
         {step === "success" && (
           <div className="flex flex-col items-center p-10 text-center">
             <div
-              className={`mb-6 flex size-20 items-center justify-center rounded-full ${purchaseStatus === "paid" ? "bg-green-50" : "bg-blue-50"
-                }`}
+              className={`mb-6 flex size-20 items-center justify-center rounded-full ${
+                purchaseStatus === "paid" ? "bg-green-50" : "bg-blue-50"
+              }`}
             >
               <CheckCircle2
-                className={`size-12 ${purchaseStatus === "paid"
-                    ? "text-green-500"
-                    : "text-blue-500"
-                  }`}
+                className={`size-12 ${
+                  purchaseStatus === "paid" ? "text-green-500" : "text-blue-500"
+                }`}
               />
             </div>
 
             <h2 className="mb-4 text-2xl font-extrabold text-slate-800">
-              {purchaseStatus === "paid"
-                ? "Compra confirmada!"
-                : "Pedido recebido!"}
+              {purchaseStatus === "paid" ? "Compra confirmada!" : "Pedido recebido!"}
             </h2>
 
-            <p className="mb-8 max-w-md font-medium leading-relaxed text-slate-500">
+            <p className="mb-8 max-w-md leading-relaxed font-medium text-slate-500">
               {purchaseStatus === "paid" ? (
                 <>
                   Seu pagamento foi aprovado e{" "}
                   {packageData.credits === 1 ? (
                     <>
-                      seu{" "}
-                      <strong className="text-slate-700">
-                        crédito extra
-                      </strong>{" "}
-                      já está sendo adicionado à sua conta. Agora é só aproveitar para
-                      mandar mais uma redação quando quiser.
+                      seu <strong className="text-slate-700">crédito extra</strong> já está sendo
+                      adicionado à sua conta. Agora é só aproveitar para mandar mais uma redação
+                      quando quiser.
                     </>
                   ) : (
                     <>
@@ -340,8 +363,8 @@ export function ConfirmPurchase({
                       <strong className="text-slate-700">
                         {packageData.credits} créditos extras
                       </strong>{" "}
-                      já estão sendo adicionados à sua conta. Agora é só aproveitar para
-                      mandar mais redações quando quiser.
+                      já estão sendo adicionados à sua conta. Agora é só aproveitar para mandar mais
+                      redações quando quiser.
                     </>
                   )}
                 </>

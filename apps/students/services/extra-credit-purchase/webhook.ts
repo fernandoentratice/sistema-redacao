@@ -7,6 +7,10 @@ import {
   buildExtraCreditPurchaseReferences,
   evaluateExtraCreditOrder,
 } from "./policy";
+import { getExtraCreditPaymentCardLifecycleAction } from "@/services/payments/payment-card-policy";
+import {
+  deactivatePaymentCardCreatedForOperation,
+} from "@/services/payments/payment-cards";
 
 export interface ExtraCreditPaymentForWebhook {
   id: string;
@@ -15,6 +19,7 @@ export interface ExtraCreditPaymentForWebhook {
   amount: number;
   credits_amount: number;
   status: string;
+  payment_card_id: string | null;
   metadata: Record<string, unknown>;
 }
 
@@ -25,6 +30,7 @@ const PAYMENT_COLUMNS = `
   amount,
   credits_amount,
   status,
+  payment_card_id,
   metadata
 `;
 
@@ -42,6 +48,7 @@ function assertValidPayment(payment: {
   amount: number;
   credits_amount: number | null;
   status: string;
+  payment_card_id: string | null;
   metadata: unknown;
 }): ExtraCreditPaymentForWebhook {
   const metadata =
@@ -71,6 +78,30 @@ function assertValidPayment(payment: {
     credits_amount: payment.credits_amount,
     metadata,
   };
+}
+
+export async function reconcileExtraCreditPaymentCard({
+  payment,
+  status,
+}: {
+  payment: ExtraCreditPaymentForWebhook;
+  status: "paid" | "failed";
+}) {
+  if (payment.metadata.payment_source !== "new_card" || !payment.payment_card_id) {
+    return;
+  }
+
+  const action = getExtraCreditPaymentCardLifecycleAction({
+    createdLocally: payment.metadata.payment_card_created_for_operation === true,
+    status,
+  });
+
+  if (action === "deactivate") {
+    await deactivatePaymentCardCreatedForOperation({
+      userId: payment.user_id,
+      paymentCardId: payment.payment_card_id,
+    });
+  }
 }
 
 export async function resolveExtraCreditPaymentForOrder(order: PagarmeOrder) {

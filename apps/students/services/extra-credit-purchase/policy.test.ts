@@ -5,7 +5,9 @@ import {
   buildExtraCreditPurchaseMetadata,
   buildExtraCreditPurchaseReferences,
   canTransitionExtraCreditPaymentStatus,
+  evaluateExtraCreditEligibility,
   evaluateExtraCreditOrder,
+  shouldRotateExtraCreditOperationId,
 } from "./policy.js";
 
 function buildOrder(overrides: Partial<PagarmeOrder> = {}): PagarmeOrder {
@@ -224,6 +226,105 @@ test("rejects a stale non-paid decision after a concurrent writer committed paid
     canTransitionExtraCreditPaymentStatus({
       currentStatus: "paid",
       nextStatus: staleDecision,
+    }),
+    false
+  );
+});
+
+const activePaidEligibilityInput = {
+  subscription: {
+    status: "active",
+    externalId: "sub_123456",
+  },
+  plan: {
+    externalId: "plan_paid_monthly",
+    price: 4990,
+  },
+  remoteStatus: "active",
+} as const;
+
+test("blocks internal free-trial and mentorship plans from extra-credit purchases", () => {
+  for (const externalId of ["internal_free_trial", "internal_mentoria_free"]) {
+    assert.deepEqual(
+      evaluateExtraCreditEligibility({
+        ...activePaidEligibilityInput,
+        plan: { externalId, price: 4990 },
+      }),
+      { eligible: false, reason: "INTERNAL_PLAN" }
+    );
+  }
+});
+
+test("blocks a locally canceled subscription even when Pagar.me is active", () => {
+  assert.deepEqual(
+    evaluateExtraCreditEligibility({
+      ...activePaidEligibilityInput,
+      subscription: {
+        ...activePaidEligibilityInput.subscription,
+        status: "canceled",
+      },
+    }),
+    { eligible: false, reason: "LOCAL_SUBSCRIPTION_NOT_ACTIVE" }
+  );
+});
+
+test("blocks a remotely canceled subscription even when local state is active", () => {
+  assert.deepEqual(
+    evaluateExtraCreditEligibility({
+      ...activePaidEligibilityInput,
+      remoteStatus: "canceled",
+    }),
+    { eligible: false, reason: "REMOTE_SUBSCRIPTION_NOT_ACTIVE" }
+  );
+});
+
+test("allows an active paid subscription confirmed active by Pagar.me", () => {
+  assert.deepEqual(evaluateExtraCreditEligibility(activePaidEligibilityInput), {
+    eligible: true,
+    reason: null,
+  });
+});
+
+test("fails closed when Pagar.me cannot be consulted", () => {
+  assert.deepEqual(
+    evaluateExtraCreditEligibility({
+      ...activePaidEligibilityInput,
+      remoteStatus: undefined,
+      remoteLookupFailed: true,
+    }),
+    { eligible: false, reason: "PAGARME_UNAVAILABLE" }
+  );
+});
+
+test("blocks an account without a local subscription", () => {
+  assert.deepEqual(
+    evaluateExtraCreditEligibility({
+      ...activePaidEligibilityInput,
+      subscription: null,
+    }),
+    { eligible: false, reason: "NO_SUBSCRIPTION" }
+  );
+});
+
+test("rotates operation id only after a definitive failure", () => {
+  assert.equal(
+    shouldRotateExtraCreditOperationId({
+      success: false,
+      paymentId: "11111111-2222-3333-4444-555555555555",
+      status: "failed",
+      creditsAmount: 4,
+      message: "failed",
+    }),
+    true
+  );
+
+  assert.equal(
+    shouldRotateExtraCreditOperationId({
+      success: false,
+      paymentId: "11111111-2222-3333-4444-555555555555",
+      status: "processing",
+      creditsAmount: 4,
+      message: "processing",
     }),
     false
   );

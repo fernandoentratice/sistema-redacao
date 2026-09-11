@@ -15,8 +15,10 @@ import {
 } from "@repo/payments";
 import {
   resolveExtraCreditPaymentForOrder,
+  reconcileExtraCreditPaymentCard,
   validateExtraCreditOrderForPayment,
 } from "@/services/extra-credit-purchase/webhook";
+import { reconcileInitialCheckoutPaymentCard } from "@/services/payments/payment-cards";
 
 import { NextResponse } from "next/server";
 
@@ -471,6 +473,16 @@ async function handleExtraCreditOrderWebhook({
       );
     }
 
+    try {
+      await reconcileExtraCreditPaymentCard({ payment, status: "paid" });
+    } catch (error) {
+      console.error("[FINALIZE_EXTRA_CREDIT_PAYMENT_CARD_ERROR]", error);
+      return NextResponse.json(
+        { error: "O pagamento foi finalizado, mas o cartão não pôde ser confirmado." },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       received: true,
       processed: true,
@@ -512,6 +524,18 @@ async function handleExtraCreditOrderWebhook({
       { error: result?.message ?? "Não foi possível processar a falha da compra." },
       { status: 500 }
     );
+  }
+
+  if (!result.ignored) {
+    try {
+      await reconcileExtraCreditPaymentCard({ payment, status: "failed" });
+    } catch (cleanupError) {
+      console.error("[PROCESS_EXTRA_CREDIT_PAYMENT_CARD_FAILURE_ERROR]", cleanupError);
+      return NextResponse.json(
+        { error: "A falha foi registrada, mas o cartão recusado não pôde ser removido." },
+        { status: 500 }
+      );
+    }
   }
 
   return NextResponse.json({
@@ -815,6 +839,26 @@ export async function POST(request: Request) {
    * A primeira cobrança é tratada pelo checkout.
    */
   if (recurrenceCycle === "first") {
+    if (subscriptionExternalId) {
+      try {
+        await reconcileInitialCheckoutPaymentCard({
+          subscriptionExternalId,
+          status: verifiedWebhook.event === "invoice.paid" ? "paid" : "failed",
+        });
+      } catch (error) {
+        console.error("[RECONCILE_INITIAL_CHECKOUT_PAYMENT_CARD_ERROR]", error);
+        await markWebhookFailed(
+          supabaseAdmin,
+          webhookEventId,
+          "Não foi possível reconciliar o cartão da cobrança inicial."
+        );
+        return NextResponse.json(
+          { error: "Não foi possível reconciliar o cartão da cobrança inicial." },
+          { status: 500 }
+        );
+      }
+    }
+
     const { error: ignoreFirstInvoiceError } = await markWebhookIgnored(
       supabaseAdmin,
       webhookEventId

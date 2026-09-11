@@ -140,28 +140,109 @@ export async function attachPaymentCardToExtraCreditPurchase({
   paymentId,
   userId,
   paymentCardId,
+  createdForOperation,
 }: {
   paymentId: string;
   userId: string;
   paymentCardId: string;
+  createdForOperation: boolean;
 }) {
   const supabaseAdmin = createAdminClient();
+  const { data: payment, error: paymentError } = await supabaseAdmin
+    .from("student_payments")
+    .select("metadata")
+    .eq("id", paymentId)
+    .eq("user_id", userId)
+    .eq("kind", "extra_credits")
+    .in("status", ["processing", "pending"])
+    .maybeSingle();
+
+  if (paymentError || !payment) {
+    console.error("[EXTRA_CREDIT_PAYMENT_CARD_METADATA_ERROR]", paymentError);
+    throw new Error("Não foi possível recuperar a compra para vincular o cartão.");
+  }
+
+  const currentMetadata =
+    payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata)
+      ? payment.metadata
+      : {};
   const { data, error } = await supabaseAdmin
     .from("student_payments")
     .update({
       payment_card_id: paymentCardId,
+      metadata: {
+        ...currentMetadata,
+        payment_card_created_for_operation: createdForOperation,
+      },
       updated_at: new Date().toISOString(),
     })
     .eq("id", paymentId)
     .eq("user_id", userId)
     .eq("kind", "extra_credits")
     .in("status", ["processing", "pending"])
-    .select("id")
+    .select("id, payment_card_id, metadata")
     .maybeSingle();
 
   if (error || !data) {
     console.error("[EXTRA_CREDIT_PAYMENT_CARD_LINK_ERROR]", error);
     throw new Error("Não foi possível vincular o cartão à compra.");
+  }
+
+  return data;
+}
+
+export async function recordExtraCreditPreOrderFailure({
+  paymentId,
+  userId,
+  providerStatus,
+  failureSource = "order_creation",
+}: {
+  paymentId: string;
+  userId: string;
+  providerStatus: number;
+  failureSource?: "card_creation" | "order_creation";
+}) {
+  const supabaseAdmin = createAdminClient();
+  const { data: payment, error: paymentError } = await supabaseAdmin
+    .from("student_payments")
+    .select("metadata")
+    .eq("id", paymentId)
+    .eq("user_id", userId)
+    .eq("kind", "extra_credits")
+    .in("status", ["processing", "pending"])
+    .maybeSingle();
+
+  if (paymentError || !payment) {
+    console.error("[EXTRA_CREDIT_PRE_ORDER_FAILURE_LOOKUP_ERROR]", paymentError);
+    throw new Error("Não foi possível recuperar a compra recusada.");
+  }
+
+  const metadata =
+    payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata)
+      ? payment.metadata
+      : {};
+  const now = new Date().toISOString();
+  const { error } = await supabaseAdmin
+    .from("student_payments")
+    .update({
+      status: "failed",
+      metadata: {
+        ...metadata,
+        payment_failure_source: "pagarme_http_response",
+        payment_failure_stage: failureSource,
+        pagarme_http_status: providerStatus,
+        payment_failed_at: now,
+      },
+      updated_at: now,
+    })
+    .eq("id", paymentId)
+    .eq("user_id", userId)
+    .eq("kind", "extra_credits")
+    .in("status", ["processing", "pending"]);
+
+  if (error) {
+    console.error("[EXTRA_CREDIT_PRE_ORDER_FAILURE_ERROR]", error);
+    throw new Error("Não foi possível registrar a recusa da compra.");
   }
 }
 
