@@ -1,12 +1,17 @@
 import "server-only";
 
-const DATACRAZY_REQUEST_TIMEOUT_MS = 5_000;
+export {
+  DATA_CRAZY_FREE_PLAN_EXTERNAL_ID,
+  DATA_CRAZY_MENTORSHIP_PLAN_EXTERNAL_ID,
+  getDataCrazyEligibility,
+  getDataCrazyPaymentStatus,
+  type DataCrazyEligibilityDecision,
+  type DataCrazyEligibilityReason,
+  type DataCrazyEvent,
+  type DataCrazySyncContext,
+} from "./eligibility";
 
-export type DataCrazyEvent =
-  | "user_signup"
-  | "essay_status_updated"
-  | "subscription_updated"
-  | "payment_status_updated";
+const DATACRAZY_REQUEST_TIMEOUT_MS = 5_000;
 
 interface DataCrazyStudentPayloadBase {
   lead: {
