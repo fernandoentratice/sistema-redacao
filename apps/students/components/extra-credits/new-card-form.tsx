@@ -82,12 +82,13 @@ function BillingAddressSection({
       collapsible
       value={isOpen ? "billing-address" : ""}
       onValueChange={(value) => onOpenChange(value === "billing-address")}
+      className="w-full"
     >
       <AccordionItem
         value="billing-address"
-        className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+        className="overflow-hidden rounded-xl border border-slate-200 bg-white last:border-b!"
       >
-        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+        <AccordionTrigger className="px-4 py-3 hover:no-underline [&>svg]:size-4 [&>svg]:shrink-0">
           <div className="flex min-w-0 items-center gap-3 text-left">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
               <MapPin className="size-4" />
@@ -100,7 +101,7 @@ function BillingAddressSection({
           </div>
         </AccordionTrigger>
 
-        <AccordionContent className="border-t border-slate-100 px-4 pt-4 pb-4">
+        <AccordionContent className="border-t border-slate-100 px-4 py-4">
           {children}
         </AccordionContent>
       </AccordionItem>
