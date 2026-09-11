@@ -9,6 +9,7 @@ import {
   CorrectionPayload,
   EssayStatus,
   GradedEssayListItem,
+  MotivationalText,
   GradedEssaysFilter,
   PendingEssayListItem,
   PendingEssaysFilter,
@@ -150,11 +151,40 @@ export async function getEssayById(id: string) {
     return null;
   }
 
+  const { data: motivationalTexts, error: motivationalTextsError } = await supabase
+    .from("motivational_texts")
+    .select("id, topic_id, text_number, body_text, image_url, source_reference")
+    .eq("topic_id", essay.topic_id)
+    .order("text_number", { ascending: true });
+
+  if (motivationalTextsError) {
+    console.error(
+      `🚨 Erro ao buscar textos motivadores da redação (${id}):`,
+      motivationalTextsError
+    );
+  }
+
+  const normalizedMotivationalTexts = (motivationalTexts ?? []).map((text: MotivationalText) => {
+    if (
+      !text.image_url ||
+      text.image_url.startsWith("http://") ||
+      text.image_url.startsWith("https://")
+    ) {
+      return text;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from("themes").getPublicUrl(text.image_url);
+
+    return { ...text, image_url: publicUrlData.publicUrl };
+  });
+
   const { student, ...essayData } = essay;
 
   return {
     ...essayData,
     student: student.full_name,
+    motivational_texts: normalizedMotivationalTexts,
+    motivational_texts_load_error: Boolean(motivationalTextsError),
   };
 }
 

@@ -10,6 +10,7 @@ import type {
   CorrectionCompetencyId,
   CorrectionPayload,
   EssayStatus,
+  MotivationalText,
 } from "@repo/types";
 import { COMPETENCIES } from "@repo/constants";
 import EssayHeader from "../../essays/components/essay-header";
@@ -29,6 +30,8 @@ interface EssayCorrectionWorkspaceProps {
     content: string;
     created_at: string;
     status: EssayStatus;
+    motivational_texts: MotivationalText[];
+    motivational_texts_load_error: boolean;
   };
   initialDraft?: CorrectionPayload | null;
   onAutoSave?: (payload: CorrectionPayload) => void;

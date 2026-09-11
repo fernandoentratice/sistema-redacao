@@ -11,11 +11,7 @@ import type {
   CreateCheckoutSubscriptionInput,
   CreateCheckoutSubscriptionResult,
 } from "@/types";
-import {
-  createPagarmeSubscription,
-  getPagarmeSubscription,
-  PagarmeApiError,
-} from "@repo/payments";
+import { createPagarmeSubscription, getPagarmeSubscription, PagarmeApiError } from "@repo/payments";
 import { getOrCreatePagarmeCustomerId } from "@/services/payments/pagarme-customer";
 import {
   createAndSavePaymentCard,
@@ -61,6 +57,7 @@ type CheckoutAccess =
       operation: CheckoutOperation;
       currentSubscriptionId: string | null;
       previousSubscriptionExternalId: string | null;
+      previousPlanExternalId: string | null;
     }
   | {
       allowed: false;
@@ -104,6 +101,7 @@ async function resolveCheckoutAccess({
       operation: "new_subscription",
       currentSubscriptionId: null,
       previousSubscriptionExternalId: null,
+      previousPlanExternalId: null,
     };
   }
 
@@ -141,6 +139,7 @@ async function resolveCheckoutAccess({
       operation: "new_subscription",
       currentSubscriptionId: currentSubscription.id,
       previousSubscriptionExternalId: currentSubscription.external_id,
+      previousPlanExternalId: currentPlan.external_id,
     };
   }
 
@@ -170,6 +169,7 @@ async function resolveCheckoutAccess({
           : "new_subscription",
       currentSubscriptionId: currentSubscription.id,
       previousSubscriptionExternalId: currentSubscription.external_id,
+      previousPlanExternalId: currentPlan.external_id,
     };
   }
 
@@ -179,6 +179,7 @@ async function resolveCheckoutAccess({
       operation: "new_subscription",
       currentSubscriptionId: currentSubscription.id,
       previousSubscriptionExternalId: currentSubscription.external_id,
+      previousPlanExternalId: currentPlan.external_id,
     };
   }
 
@@ -530,21 +531,30 @@ export async function createCheckoutSubscription(
       });
     }
 
+    try {
+      await syncStudentToDataCrazy(user.id, "payment_status_updated", {
+        paymentAttempt: "initial_refused",
+      });
+    } catch (error) {
+      console.error("[DATACRAZY_SYNC_ERROR]", {
+        user_id: user.id,
+        event: "payment_status_updated",
+        error_code: getDataCrazySyncErrorCode(error),
+      });
+    }
+
     throw new Error("Pagamento não autorizado. Confira os dados do cartão ou tente outro cartão.");
   }
 
   const providerSubscriptionItemId =
-    pagarmeSubscription.items?.find(
-      (item) => item.status === "active" && item.id.startsWith("si_")
-    )?.id ??
+    pagarmeSubscription.items?.find((item) => item.status === "active" && item.id.startsWith("si_"))
+      ?.id ??
     pagarmeSubscription.items?.find((item) => item.id.startsWith("si_"))?.id ??
     null;
 
   const finalizedAt = new Date().toISOString();
   const contractEffectiveAt =
-    pagarmeSubscription.current_cycle?.start_at ??
-    pagarmeSubscription.created_at ??
-    finalizedAt;
+    pagarmeSubscription.current_cycle?.start_at ?? pagarmeSubscription.created_at ?? finalizedAt;
 
   const { data: finalizationData, error: finalizationError } = await supabaseAdmin.rpc(
     "finalize_checkout_subscription",
@@ -618,7 +628,9 @@ export async function createCheckoutSubscription(
 
   if (!finalization.duplicate) {
     try {
-      await syncStudentToDataCrazy(user.id, "subscription_updated");
+      await syncStudentToDataCrazy(user.id, "subscription_updated", {
+        previousPlanExternalId: checkoutAccess.previousPlanExternalId,
+      });
     } catch (error) {
       console.error("[DATACRAZY_SYNC_ERROR]", {
         user_id: user.id,
