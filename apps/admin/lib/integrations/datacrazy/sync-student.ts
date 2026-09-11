@@ -64,6 +64,17 @@ export async function syncStudentToDataCrazy(
     .maybeSingle();
 
   if (profileResult.error) {
+    console.error("[DATACRAZY_DEBUG]", {
+      stage: "profile_fetch_failed",
+      user_id: userId,
+      event,
+      supabase_error: {
+        code: profileResult.error.code,
+        message: profileResult.error.message,
+        details: profileResult.error.details,
+        hint: profileResult.error.hint,
+      },
+    });
     throw new DataCrazySyncError("STUDENT_STATE_FETCH_FAILED");
   }
 
@@ -144,6 +155,17 @@ export async function syncStudentToDataCrazy(
       .maybeSingle();
 
     if (essayResult.error) {
+      console.error("[DATACRAZY_DEBUG]", {
+        stage: "essay_fetch_failed",
+        user_id: userId,
+        event,
+        supabase_error: {
+          code: essayResult.error.code,
+          message: essayResult.error.message,
+          details: essayResult.error.details,
+          hint: essayResult.error.hint,
+        },
+      });
       throw new DataCrazySyncError("STUDENT_STATE_FETCH_FAILED");
     }
 
@@ -152,6 +174,14 @@ export async function syncStudentToDataCrazy(
     }
 
     const essayStatus = ESSAY_STATUS_LABELS[essayResult.data.status];
+
+    console.info("[DATACRAZY_DEBUG]", {
+      stage: "essay_status_resolved",
+      user_id: userId,
+      event,
+      internal_status: essayResult.data.status,
+      mapped_status: essayStatus ?? null,
+    });
 
     if (!essayStatus) {
       throw new DataCrazySyncError("ESSAY_STATUS_NOT_MAPPED");
@@ -207,6 +237,11 @@ function createAdminClient() {
   const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
+    console.error("[DATACRAZY_DEBUG]", {
+      stage: "admin_client_configuration_failed",
+      has_supabase_url: Boolean(supabaseUrl),
+      has_supabase_secret_key: Boolean(supabaseServiceKey),
+    });
     throw new DataCrazySyncError("STUDENT_STATE_FETCH_FAILED");
   }
 
